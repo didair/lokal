@@ -3,7 +3,7 @@ import { FileView } from "@/components/blocks/fileview";
 import { getServerName } from "@/lib/actions";
 
 export default async function Home() {
-	const server_name = getServerName();
+	const server_name = await getServerName();
 
 	return (
 		<>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
 import { BellIcon, CircleUserIcon, SearchIcon, FileIcon, MenuIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { getCurrentUser, getServerName, logoutAction } from "@/lib/actions";
+import { getCurrentUser, getServerName } from "@/lib/actions";
 import FileUpload from "./fileupload";
 
 export const Header = async () => {

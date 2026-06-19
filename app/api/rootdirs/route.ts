@@ -4,7 +4,7 @@ import { getCurrentSession } from "@/lib/user";
 import { getServerIsSetup } from "@/lib/actions";
 import prisma from "@/lib/prisma";
 
-export async function GET(request: Request) {
+export async function GET() {
 	let valid = false;
 	const isServerSetup = await getServerIsSetup();
 

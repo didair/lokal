@@ -16,23 +16,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-type SearchParams = {
-	invite?: string,
-};
-
-export default function Register({
-	searchParams,
-}: { searchParams: SearchParams }) {
+export default function Register() {
 	const [invite, setInvite] = useState<InviteLink | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		const fetchData = async () => {
-			if (searchParams.invite == null) {
+			const inviteId = new URLSearchParams(window.location.search).get('invite');
+
+			if (inviteId == null) {
 				return;
 			}
 
-			const invite = await getInvite(searchParams.invite);
+			const invite = await getInvite(inviteId);
 			setInvite(invite);
 		};
 

@@ -52,13 +52,13 @@ export async function registerAction(formData: FormData) {
 };
 
 export async function logoutAction() {
-	destroyCurrentSession();
+	await destroyCurrentSession();
 	redirect('/login');
 };
 
 export async function saveServerSettings(formData: FormData) {
 	const owner = await isUserOwner();
-	if (!owner) { return false; }
+	if (!owner) { return; }
 
 	await prisma.setting.upsert({
 		where: { id: 'server-name' },
@@ -71,7 +71,7 @@ export async function saveServerSettings(formData: FormData) {
 
 	revalidatePath('/settings');
 
-	return true;
+	return;
 };
 
 export async function getServerSettings() {

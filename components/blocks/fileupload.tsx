@@ -30,7 +30,7 @@ const FileUpload: React.FC = () => {
 				}
 
 				if ((files[0] as any).fullPath != null) {
-					let split = ((files[0] as any).fullPath as string).split('/');
+					const split = ((files[0] as any).fullPath as string).split('/');
 					if (split.length > 0) {
 						split.slice(0,-1).forEach((path) => {
 							moreData += '/' + path;
@@ -51,7 +51,7 @@ const FileUpload: React.FC = () => {
 
 				setUploadQueue(prevQueue => [...prevQueue, uploadTask]);
 			},
-			uploadprogress(file, progress, bytesSent) {
+			uploadprogress(file, progress) {
 				setUploadQueue(prevQueue =>
 					prevQueue.map(task => task.file === file ? { ...task, progress: progress } : task)
 				);

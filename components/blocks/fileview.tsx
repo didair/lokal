@@ -3,7 +3,7 @@
 import pathFs from 'path';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { ItemTableRow } from "@/components/blocks/itemtablerow"
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { File } from "@/lib/file-utils";
 import Link from "next/link";
 import { FolderUp } from "lucide-react";
@@ -39,8 +39,13 @@ export const FileView = () => {
 			});
 	}
 
+	const goParent = useCallback((event?: React.MouseEvent<HTMLAnchorElement> | null) => {
+		event?.preventDefault();
+		setPath(parent ?? '/');
+	}, [parent]);
+
 	useEffect(() => {
-		const handlePopState = (event: PopStateEvent) => {
+		const handlePopState = () => {
 			if (parent != null) {
 				goParent(null);
 			}
@@ -52,7 +57,7 @@ export const FileView = () => {
 		return () => {
 			window.removeEventListener('popstate', handlePopState);
 		};
-	}, [router, parent]);
+	}, [goParent, parent]);
 
 	useEffect(() => {
 		const eventListener = () => {
@@ -67,7 +72,7 @@ export const FileView = () => {
 
 		window.addEventListener('FILE_COMPLETE', eventListener);
 		return () => window.removeEventListener('FILE_COMPLETE', eventListener);
-	}, [path]);
+	}, [path, router]);
 
 	useEffect(() => {
 		fetchData(path);
@@ -79,11 +84,6 @@ export const FileView = () => {
 		if (item.type == 'dir') {
 			setPath(pathFs.join(path, item.name))
 		}
-	}
-
-	const goParent = (event: any) => {
-		event?.preventDefault();
-		setPath(parent ?? '/');
 	}
 
 	return (

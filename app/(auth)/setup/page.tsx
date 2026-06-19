@@ -31,7 +31,7 @@ export default function Setup() {
 
 			setValid(!v);
 		});
-	}, []);
+	}, [router]);
 
 	if (!valid) {
 		return null;

@@ -7,6 +7,8 @@ import { Sidebar } from "@/components/blocks/sidebar"
 
 const opensans = Open_Sans({ subsets: ["latin"] });
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
 	title: "Lokal files",
 	description: "Serve your files in style",
