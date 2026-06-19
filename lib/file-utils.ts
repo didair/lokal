@@ -18,7 +18,7 @@ export function formatBytes(bytes: number): string {
 };
 
 export function getFilesInDirectory(directoryPath: string): File[] {
-	const absolutePath = path.join(process.cwd(), directoryPath);
+	const absolutePath = directoryPath;
 	const filenames = fs.readdirSync(absolutePath);
 
 	return filenames.map((filename): File => {
@@ -43,7 +43,7 @@ export function getFilesInDirectory(directoryPath: string): File[] {
 };
 
 export function getFileInfo(filePath: string) {
-	const absolutePath = path.join(process.cwd(), filePath);
+	const absolutePath = filePath;
 	const fileInfo = fs.statSync(absolutePath);
 	const split = absolutePath.split('/');
 	const name = split[split.length - 1];

@@ -1,9 +1,10 @@
 import { getCurrentUser } from "@/lib/actions";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
+import { DATA_DIR } from "@/lib/data-dir";
 import fs from "fs";
 
-const UPLOAD_DIR = path.resolve(process.env.ROOT_PATH ?? "", "data");
+const UPLOAD_DIR = DATA_DIR;
 
 export const POST = async (request: NextRequest) => {
 	const formData = await request.formData();

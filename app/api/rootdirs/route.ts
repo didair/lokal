@@ -3,6 +3,7 @@ import { getFilesInDirectory } from "@/lib/file-utils";
 import { getCurrentSession } from "@/lib/user";
 import { getServerIsSetup } from "@/lib/actions";
 import prisma from "@/lib/prisma";
+import { DATA_DIR } from "@/lib/data-dir";
 
 export async function GET() {
 	let valid = false;
@@ -28,7 +29,7 @@ export async function GET() {
 		return NextResponse.json(null);
 	}
 
-	const root_dir: string = '/data/';
+	const root_dir = DATA_DIR;
 	const response = getFilesInDirectory(root_dir).filter((file) => file.type === 'dir');
 	return NextResponse.json(response);
 };

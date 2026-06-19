@@ -7,9 +7,10 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mydb
+      - DATA_DIR=/data
       - RUN_MIGRATIONS=true
     volumes:
-      - /path/to/data:/lokal/data
+      - /path/to/data:/data
     depends_on:
       - db
 

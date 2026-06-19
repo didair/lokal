@@ -1,17 +1,15 @@
 #!/bin/sh
+set -e
 
-# Run Prisma migrations if the environment variable is set
+# Run Prisma migrations if the environment variable is set.
+# The Next.js app is built into the image, before any large data volume is mounted.
 if [ "$RUN_MIGRATIONS" = "true" ]; then
   echo "### 1. Waiting 5s before running prisma migrate ###"
-  sleep 5s && npx prisma migrate deploy
+  sleep 5s
+  npx prisma migrate deploy
   echo "### 2. Migrate script done ###"
-  echo "### 3. Generate prisma client ###"
-  npx prisma generate
-  echo "### 4. All prisma jobs complete ###"
-  echo "### 5. Build next.js application ###"
-  npm run build
 else
-  echo "### Skipping Prisma migrations & build ###"
+  echo "### Skipping Prisma migrations ###"
 fi
 
 # Start the application

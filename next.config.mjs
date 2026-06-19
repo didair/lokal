@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+	outputFileTracingExcludes: {
+		'*': ['./data/**/*', './test_data/**/*'],
+	},
 	/**
 	 *
 	 * @param {import('webpack').Configuration} config
@@ -7,6 +10,11 @@ const nextConfig = {
 	 * @returns {import('webpack').Configuration}
 	 */
 	webpack: (config, { isServer }) => {
+		config.watchOptions = {
+			...config.watchOptions,
+			ignored: ['**/data/**', '**/test_data/**'],
+		};
+
 		if (!isServer) {
 			config.module.rules.push({
 				test: /data\/.*/,

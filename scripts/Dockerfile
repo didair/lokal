@@ -6,9 +6,11 @@ WORKDIR /lokal
 COPY package.json ./
 COPY package-lock.json ./
 
-RUN npm install
+RUN npm install --ignore-scripts
 
 COPY . .
+
+RUN npx prisma generate && npm run build
 
 COPY scripts/entrypoint.sh /lokal/scripts/entrypoint.sh
 RUN chmod +x /lokal/scripts/entrypoint.sh

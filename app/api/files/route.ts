@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getFilesInDirectory } from "@/lib/file-utils";
 import { getCurrentSession } from "@/lib/user";
 import prisma from "@/lib/prisma";
+import { dataPath } from "@/lib/data-dir";
 
 export async function POST(request: Request) {
 	const formData = await request.json();
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
 		return NextResponse.json(null);
 	}
 
-	const root_dir: string = '/data/' + user.rootDir;
+	const root_dir = dataPath(user.rootDir);
 
 	let user_path: string = formData.path;
 
