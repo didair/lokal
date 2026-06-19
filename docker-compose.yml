@@ -1,6 +1,11 @@
 services:
   lokal:
-    image: didair/lokal:latest
+    # Build locally so the image matches the NAS CPU architecture.
+    # The previously published didair/lokal:latest image may not include linux/amd64.
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    image: lokal:latest
     container_name: lokal
     hostname: lokal
     ports:
