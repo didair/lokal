@@ -31,7 +31,7 @@ Production is intended to run from a prebuilt image, so the NAS does not need a 
 
 ```yaml
 environment:
-  - LOKAL_PUBLIC_URL=https://files.skurt.cloud
+  - LOKAL_PUBLIC_URL=https://lokal.mydomain.com
 ```
 
 This makes generated share and invite links use the public HTTPS URL instead of the container's local IP/port.
