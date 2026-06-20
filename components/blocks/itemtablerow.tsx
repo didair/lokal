@@ -1,6 +1,6 @@
 "use client";
 
-import { File } from "@/lib/file-utils";
+import type { File } from "@/lib/file-utils";
 
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from "../ui/context-menu";
@@ -8,7 +8,6 @@ import { FileIcon, FolderIcon, CircleAlertIcon } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
-import path from "path";
 
 export const ItemTableRow = ({
 	file,
@@ -20,7 +19,8 @@ export const ItemTableRow = ({
 	onNavigate?: (file: File) => void,
 }) => {
 	const params = useSearchParams();
-	const download_path = path.join(params.get('path') ?? '/', file.name);
+	const currentPath = params.get('path') ?? '/';
+	const download_path = [currentPath, file.name].join('/').replace(/\/+/g, '/');
 	const onItemDoubleClick = () => {
 	};
 

@@ -1,10 +1,9 @@
 "use client";
 
-import pathFs from 'path';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { ItemTableRow } from "@/components/blocks/itemtablerow"
 import { useCallback, useEffect, useState } from "react";
-import { File } from "@/lib/file-utils";
+import type { File } from "@/lib/file-utils";
 import Link from "next/link";
 import { FolderUp } from "lucide-react";
 import { useRouter } from 'next/navigation';
@@ -82,7 +81,7 @@ export const FileView = () => {
 
 	const onItemClick = (item: File) => {
 		if (item.type == 'dir') {
-			setPath(pathFs.join(path, item.name))
+			setPath([path, item.name].join('/').replace(/\/+/g, '/'))
 		}
 	}
 

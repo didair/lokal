@@ -1,4 +1,8 @@
-**.DS_Store
+.DS_Store
+.git
+.github
+.next
 node_modules
+npm-debug.log*
 test_data
 data

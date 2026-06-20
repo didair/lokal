@@ -9,15 +9,14 @@ export async function authenticateAction(formData: FormData) {
 	const user = await signIn({
 		email: formData.get('email')?.toString() ?? '',
 		password: formData.get('password')?.toString() ?? '',
-	}).catch((error) => {
-		throw new Error(error);
-	});
+	}).catch(() => null);
 
 	if (user) {
 		return redirect('/');
 	}
 
-	return revalidatePath('/login');
+	revalidatePath('/login');
+	return redirect('/login?error=invalid');
 };
 
 export async function registerAction(formData: FormData) {
@@ -130,7 +129,6 @@ export async function setupServerAction(formData: FormData) {
 		},
 	}).catch((error) => {
 		throw new Error('Could not insert server name. Message: ' + error);
-		return false;
 	});
 
 	await createUser({
@@ -141,10 +139,9 @@ export async function setupServerAction(formData: FormData) {
 		role: 'O',
 	}).catch((error) => {
 		throw new Error('Could not register user. Message: ' + error);
-		return false;
 	});
 
-	return true;
+	redirect('/');
 };
 
 export async function getServerName() {

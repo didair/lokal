@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FolderUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { File } from "@/lib/file-utils";
+import type { File } from "@/lib/file-utils";
 
 export const DirInput = ({ defaultValue }: { defaultValue?: string }) => {
 	const [selectedDir, setSelectedDir] = useState<string>(defaultValue ?? '');

@@ -1,6 +1,7 @@
 services:
   lokal:
     image: ghcr.io/didair/lokal:latest
+    pull_policy: always
     container_name: lokal
     hostname: lokal
     ports:

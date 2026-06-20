@@ -1,20 +1,25 @@
 services:
   web:
+    container_name: lokal-web
     build:
       context: .
       dockerfile: scripts/Dockerfile.dev
-    ports:
-      - "3000:3000"
+    command: ["sh", "-c", "npm run build && npx next start --hostname 0.0.0.0 --port 3333"]
+    expose:
+      - "3333"
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mydb
       - DATA_DIR=/data
       - RUN_MIGRATIONS=true
     volumes:
       - .:/lokal
-      - ./node_modules:/lokal/node_modules
+      - lokal_node_modules:/lokal/node_modules
       - ./test_data/:/data
     depends_on:
       - db
+    networks:
+      - default
+      - local-proxy
 
   db:
     image: postgres:13
@@ -41,3 +46,8 @@ services:
 volumes:
   postgres_data:
   pgadmin:
+  lokal_node_modules:
+
+networks:
+  local-proxy:
+    external: true
