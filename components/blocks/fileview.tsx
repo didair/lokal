@@ -7,16 +7,44 @@ import type { File } from "@/lib/file-utils";
 import Link from "next/link";
 import { FolderUp } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { FileTag, Tag } from "./tagselector";
+import { normalizeTagPath } from "./tagselector";
+import type { ShareSummary } from "./sharedialog";
+
+type FileListItem = File & {
+	path?: string;
+};
 
 export const FileView = () => {
-	const [files, setFiles] = useState<File[]>([]);
+	const [files, setFiles] = useState<FileListItem[]>([]);
+	const [tags, setTags] = useState<Tag[]>([]);
+	const [fileTags, setFileTags] = useState<FileTag[]>([]);
+	const [shares, setShares] = useState<ShareSummary[]>([]);
 	const searchParams = useSearchParams();
-	const initialPath = searchParams.get('path') ?? '/';
-	const [path, setPath] = useState(initialPath);
+	const routePath = searchParams.get('path') ?? '/';
+	const selectedTagId = searchParams.get('tag');
+	const [path, setPath] = useState(routePath);
 	const [parent, setParent] = useState<string | null>(null);
 	const router = useRouter();
 
-	const fetchData = (path: string) => {
+	const fetchData = useCallback((path: string, tagId?: string | null) => {
+		if (tagId) {
+			fetch(`/api/file-tags?tagId=${encodeURIComponent(tagId)}`)
+				.then(async (response) => {
+					const body = await response.json();
+
+					setParent(null);
+					setFiles((body?.files ?? []).map((file: FileListItem) => {
+						return {
+							...file,
+							date: new Date(file.date),
+						};
+					}));
+				});
+
+			return;
+		}
+
 		fetch('/api/files', {
 			method: 'POST',
 			headers: {
@@ -44,7 +72,33 @@ export const FileView = () => {
 					};
 				}));
 			});
-	}
+	}, []);
+
+	const fetchTags = useCallback(() => {
+		Promise.all([
+			fetch('/api/tags').then((response) => response.json()),
+			fetch('/api/file-tags').then((response) => response.json()),
+		]).then(([tagsResponse, fileTagsResponse]) => {
+			setTags(tagsResponse ?? []);
+			setFileTags(fileTagsResponse ?? []);
+		});
+	}, []);
+
+	const refreshTagData = useCallback(() => {
+		fetchTags();
+		fetchData(path, selectedTagId);
+	}, [fetchData, fetchTags, path, selectedTagId]);
+
+	const fetchShares = useCallback(() => {
+		fetch('/api/shares')
+			.then((response) => response.json())
+			.then((sharesResponse) => setShares(sharesResponse ?? []));
+	}, []);
+
+	const refreshRowData = useCallback(() => {
+		refreshTagData();
+		fetchShares();
+	}, [fetchShares, refreshTagData]);
 
 	const goParent = useCallback((event?: React.MouseEvent<HTMLAnchorElement> | null) => {
 		event?.preventDefault();
@@ -53,7 +107,7 @@ export const FileView = () => {
 
 	useEffect(() => {
 		const handlePopState = () => {
-			if (parent != null) {
+			if (parent != null && !selectedTagId) {
 				goParent(null);
 			}
 		};
@@ -64,47 +118,88 @@ export const FileView = () => {
 		return () => {
 			window.removeEventListener('popstate', handlePopState);
 		};
-	}, [goParent, parent]);
+	}, [goParent, parent, selectedTagId]);
 
 	useEffect(() => {
 		const eventListener = () => {
-			fetchData(path);
+			fetchData(path, selectedTagId);
 		};
 
-		const href = path === '/' ? '/files' : `/files?path=${encodeURIComponent(path)}`;
-		router.push(href, {
-			scroll: false
-		});
+		if (!selectedTagId) {
+			const href = path === '/' ? '/files' : `/files?path=${encodeURIComponent(path)}`;
+			router.push(href, {
+				scroll: false
+			});
+		}
 
 		window.addEventListener('FILE_COMPLETE', eventListener);
 		return () => window.removeEventListener('FILE_COMPLETE', eventListener);
-	}, [path, router]);
+	}, [fetchData, path, router, selectedTagId]);
 
 	useEffect(() => {
-		fetchData(path);
+		fetchTags();
+		fetchShares();
+	}, [fetchShares, fetchTags]);
 
-		localStorage.setItem('currentFilePath', path);
-	}, [path]);
+	useEffect(() => {
+		if (!selectedTagId) {
+			setPath(routePath);
+		}
+	}, [routePath, selectedTagId]);
 
-	const onItemClick = (item: File) => {
+	useEffect(() => {
+		fetchData(path, selectedTagId);
+
+		if (!selectedTagId) {
+			localStorage.setItem('currentFilePath', path);
+		}
+	}, [fetchData, path, selectedTagId]);
+
+	const onItemClick = (item: FileListItem) => {
 		if (item.type == 'dir') {
-			setPath([path, item.name].join('/').replace(/\/+/g, '/'));
+			const nextPath = item.path ? `/${item.path}` : [path, item.name].join('/').replace(/\/+/g, '/');
+			setPath(nextPath);
+			router.push(`/files?path=${encodeURIComponent(nextPath)}`, {
+				scroll: false,
+			});
 		}
 	}
+
+	const getItemPath = (file: FileListItem) => {
+		return normalizeTagPath(file.path ?? [path, file.name].join('/').replace(/\/+/g, '/'));
+	};
+
+	const getItemParentPath = (file: FileListItem) => {
+		const parts = getItemPath(file).split('/').filter(Boolean);
+		parts.pop();
+		return `/${parts.join('/')}`;
+	};
+
+	const getTagsForFile = (file: FileListItem) => {
+		const itemPath = getItemPath(file);
+		return fileTags
+			.filter((fileTag) => fileTag.path === itemPath)
+			.map((fileTag) => fileTag.tag);
+	};
+
+	const getSharesForFile = (file: FileListItem) => {
+		const itemPath = getItemPath(file);
+		return shares.filter((share) => share.path === itemPath);
+	};
 
 	return (
 		<Table>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>
-					<TableHead>Type</TableHead>
+					<TableHead>Tags</TableHead>
 					<TableHead>Date</TableHead>
 					<TableHead>Size</TableHead>
 				</TableRow>
 			</TableHeader>
 
 			<TableBody>
-				{parent != null ?
+				{parent != null && !selectedTagId ?
 					<TableRow>
 						<TableCell style={{ height: 49 }}>
 							<div className="flex items-center gap-2">
@@ -121,12 +216,28 @@ export const FileView = () => {
 					</TableRow>
 					: null}
 
+				{selectedTagId && files.length === 0 ?
+					<TableRow>
+						<TableCell colSpan={4} className="text-muted-foreground">
+							No files or folders have this tag yet.
+						</TableCell>
+					</TableRow>
+				: null}
+
 				{[...files]
 					.sort((file) => file.type == 'dir' ? -1 : 1)
 					.map((file, index) => {
 						return <ItemTableRow
 							file={file}
 							key={index}
+							currentPath={getItemParentPath(file)}
+							itemPath={getItemPath(file)}
+							showPath={selectedTagId != null}
+							tags={tags}
+							assignedTags={getTagsForFile(file)}
+							activeShares={getSharesForFile(file)}
+							onTagsChange={refreshRowData}
+							onSharesChange={fetchShares}
 							onNavigate={onItemClick}
 						/>
 					})}

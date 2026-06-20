@@ -10,7 +10,7 @@ RUN npm install --ignore-scripts
 
 COPY . .
 
-RUN rm -rf .next && npx prisma generate && npm run build
+RUN rm -rf .next && npm run build
 
 COPY scripts/entrypoint.sh /lokal/scripts/entrypoint.sh
 RUN chmod +x /lokal/scripts/entrypoint.sh

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npx prisma generate && next build",
+    "dev:docker": "npx prisma generate && next dev --webpack --hostname 0.0.0.0 --port 3333",
     "start": "next start",
     "lint": "eslint .",
     "postinstall": "npx prisma generate",

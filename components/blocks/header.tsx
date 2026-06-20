@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
 import { BellIcon, CircleUserIcon, SearchIcon, FileIcon, MenuIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { getCurrentUser, getServerName } from "@/lib/actions";
+import { getCurrentUser, getServerName, getTags } from "@/lib/actions";
 import FileUpload from "./fileupload";
 
 export const Header = async () => {
 	const server_name = await getServerName();
 	const current_user = await getCurrentUser();
+	const tags = await getTags();
 
 	return (
 		<header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
@@ -30,7 +31,7 @@ export const Header = async () => {
 						</Link>
 
 						<Link
-							href="#"
+							href="/"
 							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
 							prefetch={false}
 						>
@@ -39,7 +40,7 @@ export const Header = async () => {
 						</Link>
 
 						<Link
-							href="#"
+							href="/files"
 							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
 							prefetch={false}
 						>
@@ -69,22 +70,17 @@ export const Header = async () => {
 
 						<div className="mx-[-0.65rem] px-3 text-lg font-medium text-muted-foreground">Tags</div>
 
-						<Link
-							href="#"
-							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-							prefetch={false}
-						>
-							<TagIcon className="h-5 w-5" />
-							Photos May
-						</Link>
-						<Link
-							href="#"
-							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-							prefetch={false}
-						>
-							<TagIcon className="h-5 w-5" />
-							Important work
-						</Link>
+						{tags.map((tag) => (
+							<Link
+								key={tag.id}
+								href={`/files?tag=${tag.id}`}
+								className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+								prefetch={false}
+							>
+								<TagIcon className="h-5 w-5" style={{ color: tag.color }} />
+								{tag.name}
+							</Link>
+						))}
 					</nav>
 				</SheetContent>
 			</Sheet>

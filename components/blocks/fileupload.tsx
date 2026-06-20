@@ -18,11 +18,15 @@ const FileUpload: React.FC = () => {
 	const [uploading, setUploading] = useState<boolean>(false);
 
 	useEffect(() => {
-		if (document.body.classList.contains('dz-clickable')) {
-			return;
+		const existingDropzone = (document.body as any).dropzone;
+		if (existingDropzone) {
+			existingDropzone.destroy();
 		}
 
-		new Dropzone(document.body, {
+		document.body.classList.remove('dz-clickable');
+
+		const dropzone = new Dropzone(document.body, {
+			clickable: false,
 			url: (files) => {
 				let moreData = '';
 				if (window.location.pathname == '/files') {
@@ -70,6 +74,11 @@ const FileUpload: React.FC = () => {
 				}, 1000 * 5)
 			},
 		});
+
+		return () => {
+			dropzone.destroy();
+			document.body.classList.remove('dz-clickable');
+		};
 	}, []);
 
 	let totalProgress = 0;

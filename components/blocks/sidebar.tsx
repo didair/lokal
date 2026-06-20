@@ -2,10 +2,12 @@ import Link from "next/link";
 import { FileIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { SidebarItem } from "../ui/sidebaritem";
-import { getServerName } from "@/lib/actions";
+import { getServerName, getTags } from "@/lib/actions";
 
 export const Sidebar = async () => {
 	const server_name = await getServerName();
+	const tags = await getTags();
+
 	return (
 		<div className="flex h-full max-h-screen flex-col gap-2">
 			<div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -43,15 +45,12 @@ export const Sidebar = async () => {
 						<div className="px-3 text-sm font-medium text-muted-foreground">Tags</div>
 					</div>
 
-					<SidebarItem href="#">
-						<TagIcon className="h-4 w-4" />
-						Photos May
-					</SidebarItem>
-
-					<SidebarItem href="#">
-						<TagIcon className="h-4 w-4" />
-						Important work
-					</SidebarItem>
+					{tags.map((tag) => (
+						<SidebarItem href={`/files?tag=${tag.id}`} key={tag.id}>
+							<TagIcon className="h-4 w-4" style={{ color: tag.color }} />
+							{tag.name}
+						</SidebarItem>
+					))}
 				</nav>
 			</div>
 		</div>

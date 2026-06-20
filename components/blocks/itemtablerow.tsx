@@ -5,25 +5,39 @@ import type { File } from "@/lib/file-utils";
 import { useState } from "react";
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from "../ui/context-menu";
-import { FileIcon, FolderIcon, CircleAlertIcon } from "lucide-react";
+import { FileIcon, FolderIcon, CircleAlertIcon, Share2 } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
-import { useSearchParams } from "next/navigation";
-import { ShareDialog } from "./sharedialog";
+import { ShareDialog, type ShareSummary } from "./sharedialog";
+import { TagSelector, type Tag } from "./tagselector";
 
 export const ItemTableRow = ({
 	file,
+	currentPath,
+	itemPath: providedItemPath,
+	showPath = false,
+	tags,
+	assignedTags,
+	activeShares,
 	onClick = () => null,
 	onNavigate = () => null,
+	onTagsChange = () => null,
+	onSharesChange = () => null,
 }: {
 	file: File,
+	currentPath: string,
+	itemPath?: string,
+	showPath?: boolean,
+	tags: Tag[],
+	assignedTags: Tag[],
+	activeShares: ShareSummary[],
 	onClick?: (file: File) => void,
 	onNavigate?: (file: File) => void,
+	onTagsChange?: () => void,
+	onSharesChange?: () => void,
 }) => {
 	const [shareOpen, setShareOpen] = useState(false);
-	const params = useSearchParams();
-	const currentPath = params.get('path') ?? '/';
-	const itemPath = [currentPath, file.name].join('/').replace(/\/+/g, '/');
+	const itemPath = providedItemPath ?? [currentPath, file.name].join('/').replace(/\/+/g, '/');
 	const download_path = itemPath;
 	const onItemDoubleClick = () => {
 	};
@@ -54,26 +68,26 @@ export const ItemTableRow = ({
 								{file.name}
 							</Link>
 
-							{/* Tags */}
-							{/* <Link href="#" className="inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-								Photos May
-							</Link> */}
+							{activeShares.length > 0 ?
+								<Share2 className="h-4 w-4 text-muted-foreground" aria-label="Active share link" />
+							: null}
+
+							{showPath ?
+								<span className="text-xs text-muted-foreground">
+									/{itemPath.replace(/^\/+/, '')}
+								</span>
+							: null}
 						</div>
 					</TableCell>
 
-					{/* Type */}
-					<TableCell>
-						{file.type == 'dir' ?
-							"Directory"
-						: null}
-
-						{file.type == 'file' ?
-							"File"
-						: null}
-
-						{file.type == 'other' ?
-							"Unknown"
-						: null}
+					{/* Tags */}
+					<TableCell onClick={(event) => event.stopPropagation()}>
+						<TagSelector
+							path={itemPath}
+							tags={tags}
+							assignedTags={assignedTags}
+							onChange={onTagsChange}
+						/>
 					</TableCell>
 
 					{/* Date */}
@@ -96,8 +110,8 @@ export const ItemTableRow = ({
 				: null}
 
 				<ContextMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</ContextMenuItem>
-				<ContextMenuItem>Rename</ContextMenuItem>
-				<ContextMenuItem>Delete</ContextMenuItem>
+				<ContextMenuItem disabled>Rename</ContextMenuItem>
+				<ContextMenuItem disabled>Delete</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>
 
@@ -109,6 +123,8 @@ export const ItemTableRow = ({
 				path: itemPath,
 				fileType: file.type === 'dir' ? 'dir' : 'file',
 			}}
+			existingShares={activeShares}
+			onSharesChange={onSharesChange}
 		/>
 		</>
 	);

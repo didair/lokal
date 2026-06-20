@@ -4,13 +4,15 @@ services:
     build:
       context: .
       dockerfile: scripts/Dockerfile.dev
-    command: ["sh", "-c", "npm run build && npx next start --hostname 0.0.0.0 --port 3333"]
+    command: ["npm", "run", "dev:docker"]
     expose:
       - "3333"
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mydb
       - DATA_DIR=/data
       - RUN_MIGRATIONS=true
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/lokal
       - lokal_node_modules:/lokal/node_modules

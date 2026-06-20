@@ -4,6 +4,13 @@ import { redirect } from "next/navigation";
 import { signIn, createUser, destroyCurrentSession, getCurrentSession, User } from "./user";
 import { revalidatePath } from "next/cache";
 import prisma from "./prisma";
+import type { Prisma } from "@prisma/client";
+
+type SharedWithMeShare = Prisma.ShareGetPayload<{
+	include: {
+		owner: { select: { name: true } },
+	},
+}>;
 
 export async function authenticateAction(formData: FormData) {
 	const user = await signIn({
@@ -175,7 +182,7 @@ export async function getInvite(inviteId: string) {
 };
 
 
-export async function getSharedWithMe() {
+export async function getSharedWithMe(): Promise<SharedWithMeShare[]> {
 	const currentUser = await getCurrentUser();
 	const shares = await prisma.share.findMany({
 		where: {
@@ -193,4 +200,13 @@ export async function getSharedWithMe() {
 	});
 
 	return shares.filter((share) => share.maxReads == null || share.readCount < share.maxReads);
+}
+
+export async function getTags() {
+	const currentUser = await getCurrentUser();
+
+	return prisma.tag.findMany({
+		where: { ownerId: currentUser.id },
+		orderBy: { name: 'asc' },
+	});
 }
