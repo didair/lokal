@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { UsersIcon } from 'lucide-react';
+import { FileIcon, FolderIcon, UsersIcon } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,7 +37,6 @@ export default async function SharedWithMePage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
               <TableHead>Shared by</TableHead>
               <TableHead>Created</TableHead>
             </TableRow>
@@ -45,7 +44,7 @@ export default async function SharedWithMePage() {
           <TableBody>
             {shares.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={3} className="text-muted-foreground">
                   <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
                     <UsersIcon className="h-8 w-8 text-rose-500" />
                     <span className="text-sm font-semibold text-zinc-700">Nothing has been shared with you yet.</span>
@@ -55,14 +54,17 @@ export default async function SharedWithMePage() {
               </TableRow>
             ) : null}
             {shares.map((share) => (
-              <TableRow key={share.id}>
+              <TableRow key={share.id} className="h-14">
                 <TableCell>
                   <Link href={`/share/${share.token}`} className="flex items-center gap-2 font-medium">
-                    <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                    {share.fileType === 'dir' ? (
+                      <FolderIcon className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <FileIcon className="h-4 w-4 text-muted-foreground" />
+                    )}
                     {share.name}
                   </Link>
                 </TableCell>
-                <TableCell>{share.fileType === 'dir' ? 'Directory' : 'File'}</TableCell>
                 <TableCell>{share.owner.name}</TableCell>
                 <TableCell>{formatDate(share.createdAt)}</TableCell>
               </TableRow>

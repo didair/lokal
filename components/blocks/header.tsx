@@ -131,7 +131,7 @@ export const Header = async () => {
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
-							<Link href="/logout" className="cursor-pointer">
+							<Link href="/logout" className="cursor-pointer" prefetch={false}>
 								Logout
 							</Link>
 						</DropdownMenuItem>
