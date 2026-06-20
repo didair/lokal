@@ -14,25 +14,42 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  password      String
-  rootDir       String    @default("")
-  role          String    @default("U")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  rootDir   String   @default("")
+  role      String   @default("U")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shares    Share[]
 }
 
 model Setting {
-  id            String    @id @unique
-  value         String
+  id    String @id @unique
+  value String
 }
 
 model InviteLink {
-  id            String    @id @default(cuid())
-  used          Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  rootDir       String    @default("")
-  role          String    @default("U")
+  id        String   @id @default(cuid())
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  rootDir   String   @default("")
+  role      String   @default("U")
+}
+
+model Share {
+  id           String    @id @default(cuid())
+  token        String    @unique @default(cuid())
+  name         String
+  path         String
+  fileType     String
+  access       String
+  ownerId      String
+  ownerRootDir String    @default("")
+  expiresAt    DateTime?
+  maxReads     Int?
+  readCount    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }

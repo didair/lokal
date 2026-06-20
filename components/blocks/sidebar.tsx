@@ -27,7 +27,7 @@ export const Sidebar = async () => {
 						Files
 					</SidebarItem>
 
-					<SidebarItem href="#">
+					<SidebarItem href="/shared">
 						<UsersIcon className="h-4 w-4" />
 						Shared with me
 					</SidebarItem>

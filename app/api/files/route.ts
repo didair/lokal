@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 		return NextResponse.json(null);
 	}
 
-	const root_dir = dataPath(user.rootDir);
+	const root_dir = user.rootDir;
 
 	let user_path: string = formData.path;
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
 	const response = {
 		parent: parent,
-		files: getFilesInDirectory(root_dir + user_path),
+		files: getFilesInDirectory(dataPath(root_dir, user_path)),
 	};
 
 	return NextResponse.json(response);

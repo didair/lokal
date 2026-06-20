@@ -48,7 +48,7 @@ export const Header = async () => {
 						</Link>
 
 						<Link
-							href="#"
+							href="/shared"
 							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
 							prefetch={false}
 						>

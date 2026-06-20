@@ -6,11 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { File } from "@/lib/file-utils";
 import Link from "next/link";
 import { FolderUp } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export const FileView = () => {
 	const [files, setFiles] = useState<File[]>([]);
-	const [path, setPath] = useState('/');
+	const searchParams = useSearchParams();
+	const initialPath = searchParams.get('path') ?? '/';
+	const [path, setPath] = useState(initialPath);
 	const [parent, setParent] = useState<string | null>(null);
 	const router = useRouter();
 
@@ -27,6 +29,12 @@ export const FileView = () => {
 		})
 			.then(async (response) => {
 				const body = await response.json();
+
+				if (body == null) {
+					setParent(null);
+					setFiles([]);
+					return;
+				}
 
 				setParent(body.parent);
 				setFiles(body.files.map((file: File) => {
@@ -63,11 +71,10 @@ export const FileView = () => {
 			fetchData(path);
 		};
 
-		if (path != '/') {
-			router.push('/files?path=' + path, {
-				scroll: false
-			});
-		}
+		const href = path === '/' ? '/files' : `/files?path=${encodeURIComponent(path)}`;
+		router.push(href, {
+			scroll: false
+		});
 
 		window.addEventListener('FILE_COMPLETE', eventListener);
 		return () => window.removeEventListener('FILE_COMPLETE', eventListener);
@@ -81,7 +88,7 @@ export const FileView = () => {
 
 	const onItemClick = (item: File) => {
 		if (item.type == 'dir') {
-			setPath([path, item.name].join('/').replace(/\/+/g, '/'))
+			setPath([path, item.name].join('/').replace(/\/+/g, '/'));
 		}
 	}
 

@@ -173,3 +173,24 @@ export async function getInvite(inviteId: string) {
 
 	return invite;
 };
+
+
+export async function getSharedWithMe() {
+	const currentUser = await getCurrentUser();
+	const shares = await prisma.share.findMany({
+		where: {
+			access: 'private',
+			ownerId: { not: currentUser.id },
+			OR: [
+				{ expiresAt: null },
+				{ expiresAt: { gt: new Date() } },
+			],
+		},
+		include: {
+			owner: { select: { name: true } },
+		},
+		orderBy: { createdAt: 'desc' },
+	});
+
+	return shares.filter((share) => share.maxReads == null || share.readCount < share.maxReads);
+}

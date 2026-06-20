@@ -2,12 +2,14 @@
 
 import type { File } from "@/lib/file-utils";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from "../ui/context-menu";
 import { FileIcon, FolderIcon, CircleAlertIcon } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
+import { ShareDialog } from "./sharedialog";
 
 export const ItemTableRow = ({
 	file,
@@ -18,13 +20,16 @@ export const ItemTableRow = ({
 	onClick?: (file: File) => void,
 	onNavigate?: (file: File) => void,
 }) => {
+	const [shareOpen, setShareOpen] = useState(false);
 	const params = useSearchParams();
 	const currentPath = params.get('path') ?? '/';
-	const download_path = [currentPath, file.name].join('/').replace(/\/+/g, '/');
+	const itemPath = [currentPath, file.name].join('/').replace(/\/+/g, '/');
+	const download_path = itemPath;
 	const onItemDoubleClick = () => {
 	};
 
 	return (
+		<>
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
 				<TableRow onClick={() => onClick(file)} onDoubleClick={onItemDoubleClick} style={{ height: 49 }}>
@@ -90,11 +95,22 @@ export const ItemTableRow = ({
 					</ContextMenuItem>
 				: null}
 
-				<ContextMenuItem>Share</ContextMenuItem>
+				<ContextMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</ContextMenuItem>
 				<ContextMenuItem>Rename</ContextMenuItem>
 				<ContextMenuItem>Delete</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>
+
+		<ShareDialog
+			open={shareOpen}
+			onOpenChange={setShareOpen}
+			item={{
+				name: file.name,
+				path: itemPath,
+				fileType: file.type === 'dir' ? 'dir' : 'file',
+			}}
+		/>
+		</>
 	);
 
 };
