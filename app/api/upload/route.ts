@@ -1,40 +1,65 @@
-import { getCurrentUser } from "@/lib/actions";
-import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-import { DATA_DIR } from "@/lib/data-dir";
-import fs from "fs";
+import { getCurrentUser } from '@/lib/actions';
+import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+import { DATA_DIR } from '@/lib/data-dir';
+import fs from 'fs/promises';
 
-const UPLOAD_DIR = DATA_DIR;
+const normalizeRelativePath = (value: string | null) => {
+	return (value ?? '')
+		.replace(/\\/g, '/')
+		.split('/')
+		.filter((part) => part && part !== '.' && part !== '..')
+		.join('/');
+};
+
+const resolveUploadPath = (rootDir: string, currentPath: string | null, relativePath: string | null, fileName: string) => {
+	const safeCurrentPath = normalizeRelativePath(currentPath);
+	const safeRelativePath = normalizeRelativePath(relativePath);
+	const safeFileName = path.basename(fileName);
+	const relativeDirectory = safeRelativePath ? path.dirname(safeRelativePath) : '';
+	const userRoot = path.resolve(DATA_DIR, normalizeRelativePath(rootDir));
+	const targetDirectory = path.resolve(userRoot, safeCurrentPath, relativeDirectory === '.' ? '' : relativeDirectory);
+	const targetFile = path.resolve(targetDirectory, safeFileName);
+
+	if (targetDirectory !== userRoot && !targetDirectory.startsWith(`${userRoot}${path.sep}`)) {
+		throw new Error('Invalid upload path');
+	}
+
+	return { targetDirectory, targetFile };
+};
 
 export const POST = async (request: NextRequest) => {
-	const formData = await request.formData();
-	const body = Object.fromEntries(formData);
-	const file = (body.file as Blob) || null;
-	const user = await getCurrentUser();
-	let target = path.join(UPLOAD_DIR, user.rootDir);
+	try {
+		const formData = await request.formData();
+		const file = formData.get('file');
 
-	if (request.nextUrl.searchParams.get('path') != null) {
-		target = path.join(target, request.nextUrl.searchParams.get('path') ?? '');
-	}
-
-	if (file) {
-		const buffer = Buffer.from(await file.arrayBuffer());
-		if (!fs.existsSync(target)) {
-			fs.mkdirSync(target);
+		if (!(file instanceof File)) {
+			return NextResponse.json({ success: false, error: 'Missing file' }, { status: 400 });
 		}
 
-		fs.writeFileSync(
-			path.resolve(target, (body.file as File).name),
-			buffer
+		const user = await getCurrentUser();
+		if (!user?.id) {
+			return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+		}
+
+		const { targetDirectory, targetFile } = resolveUploadPath(
+			user.rootDir,
+			request.nextUrl.searchParams.get('path'),
+			request.nextUrl.searchParams.get('relativePath'),
+			file.name,
 		);
-	} else {
+
+		await fs.mkdir(targetDirectory, { recursive: true });
+		await fs.writeFile(targetFile, Buffer.from(await file.arrayBuffer()));
+
+		return NextResponse.json({
+			success: true,
+			name: file.name,
+		});
+	} catch (error) {
 		return NextResponse.json({
 			success: false,
-		});
+			error: error instanceof Error ? error.message : 'Upload failed',
+		}, { status: 500 });
 	}
-
-	return NextResponse.json({
-		success: true,
-		name: (body.file as File).name,
-	});
 };
