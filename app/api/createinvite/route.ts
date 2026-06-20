@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getCurrentSession } from "@/lib/user";
 import prisma from "@/lib/prisma";
+import { getPublicUrl } from "@/lib/public-url";
 
 export async function POST(request: Request) {
 	const session = await getCurrentSession();
@@ -22,5 +23,8 @@ export async function POST(request: Request) {
 		data: formData,
 	});
 
-	return NextResponse.json(inviteLink);
+	return NextResponse.json({
+		...inviteLink,
+		link: `${getPublicUrl(request)}/register?invite=${inviteLink.id}`,
+	});
 };

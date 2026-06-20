@@ -9,16 +9,18 @@ export const Sidebar = async () => {
 	const tags = await getTags();
 
 	return (
-		<div className="flex h-full max-h-screen flex-col gap-2">
-			<div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-				<Link href="/" className="flex items-center gap-2 font-semibold" prefetch={false}>
-					<Package2Icon className="h-6 w-6" />
-					<span className="">{server_name}</span>
+		<div className="flex h-full max-h-screen flex-col gap-4">
+			<div className="flex h-16 items-center border-b border-zinc-200/80 px-4 lg:px-5">
+				<Link href="/" className="flex min-w-0 items-center gap-3 font-semibold" prefetch={false}>
+					<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-sm shadow-rose-500/25">
+						<Package2Icon className="h-5 w-5" />
+					</span>
+					<span className="truncate text-sm tracking-tight">{server_name}</span>
 				</Link>
 			</div>
 
 			<div className="flex-1 overflow-auto">
-				<nav className="grid items-start px-2 text-sm font-medium lg:px-4 gap-1">
+				<nav className="grid items-start gap-1 px-2 text-sm font-medium lg:px-4">
 					<SidebarItem href="/">
 						<HomeIcon className="h-4 w-4" />
 						Dashboard
@@ -40,9 +42,9 @@ export const Sidebar = async () => {
 					</SidebarItem>
 
 					<div>
-						<Separator className="my-2" />
+						<Separator className="my-3" />
 
-						<div className="px-3 text-sm font-medium text-muted-foreground">Tags</div>
+						<div className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Tags</div>
 					</div>
 
 					{tags.map((tag) => (

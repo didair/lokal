@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,15 +36,24 @@ type ShareDialogProps = {
 type Expiration = 'after-read' | '24h' | 'custom';
 type ShareAccess = 'public' | 'private';
 
+type ShareUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export type ShareSummary = {
   id: string;
   token: string;
   access: ShareAccess;
   path: string;
+  recipientId: string | null;
+  recipient: ShareUser | null;
   expiresAt: string | null;
   maxReads: number | null;
   readCount: number;
   createdAt: string;
+  link: string;
 };
 
 function getExpirationLabel(share: ShareSummary) {
@@ -61,16 +70,36 @@ function getExpirationLabel(share: ShareSummary) {
 
 export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesChange, item }: ShareDialogProps) {
   const [access, setAccess] = useState<ShareAccess>('public');
+  const [users, setUsers] = useState<ShareUser[]>([]);
+  const [recipientId, setRecipientId] = useState('');
   const [expiration, setExpiration] = useState<Expiration>('24h');
   const [customExpiresAt, setCustomExpiresAt] = useState('');
   const [link, setLink] = useState('');
   const [copiedLink, setCopiedLink] = useState('');
   const [loading, setLoading] = useState(false);
+  const [revokingId, setRevokingId] = useState('');
 
   useEffect(() => {
     setLink('');
     setCopiedLink('');
   }, [item.path, open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    fetch('/api/share-users')
+      .then((response) => response.json())
+      .then((usersResponse) => {
+        const nextUsers = usersResponse ?? [];
+        setUsers(nextUsers);
+
+        if (!recipientId && nextUsers.length > 0) {
+          setRecipientId(nextUsers[0].id);
+        }
+      });
+  }, [open, recipientId]);
 
   const createLink = async () => {
     setLoading(true);
@@ -86,15 +115,30 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
       body: JSON.stringify({
         ...item,
         access,
+        recipientId,
         expiration,
         customExpiresAt,
-        origin: window.location.origin,
       }),
     });
 
     const body = await response.json();
     setLink(body.link ?? '');
     setLoading(false);
+    onSharesChange?.();
+  };
+
+  const revokeShare = async (shareId: string) => {
+    setRevokingId(shareId);
+
+    await fetch('/api/shares', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: shareId }),
+    });
+
+    setRevokingId('');
     onSharesChange?.();
   };
 
@@ -139,6 +183,10 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
     setAccess(nextAccess);
     setLink('');
     setCopiedLink('');
+
+    if (nextAccess === 'private' && !recipientId && users.length > 0) {
+      setRecipientId(users[0].id);
+    }
   };
 
   const updateExpiration = (nextExpiration: Expiration) => {
@@ -147,10 +195,9 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
     setCopiedLink('');
   };
 
-  const getShareUrl = (share: ShareSummary) => {
-    const origin = typeof window === 'undefined' ? '' : window.location.origin;
-    return `${origin}/share/${share.token}`;
-  };
+  const generateDisabled = loading
+    || (expiration === 'custom' && !customExpiresAt)
+    || (access === 'private' && !recipientId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -167,12 +214,15 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
             <div className="grid gap-2 rounded-md border p-3">
               <Label>Existing active links</Label>
               {existingShares.map((share) => {
-                const shareUrl = getShareUrl(share);
+                const shareUrl = share.link;
 
                 return (
                   <div className="grid gap-1" key={share.id}>
                     <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="capitalize">{share.access} link</span>
+                      <span className="capitalize">
+                        {share.access} link
+                        {share.access === 'private' ? ` shared with ${share.recipient?.name ?? share.recipient?.email ?? 'unknown user'}` : ''}
+                      </span>
                       <span>{getExpirationLabel(share)}</span>
                     </div>
                     <div className="flex gap-2">
@@ -189,6 +239,15 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
                             Copy
                           </>
                         )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => revokeShare(share.id)}
+                        disabled={revokingId === share.id}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {revokingId === share.id ? 'Revoking' : 'Revoke'}
                       </Button>
                     </div>
                   </div>
@@ -222,6 +281,27 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
             </p>
           </div>
 
+          {access === 'private' ? (
+            <div className="grid gap-2">
+              <Label>Share with</Label>
+              <Select value={recipientId} onValueChange={setRecipientId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem value={user.id} key={user.id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {users.length === 0 ? (
+                <p className="text-xs text-muted-foreground">There are no other users to share with yet.</p>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid gap-2">
             <Label>Link expiration</Label>
             <Select value={expiration} onValueChange={(value) => updateExpiration(value as Expiration)}>
@@ -252,7 +332,7 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
             </div>
           ) : null}
 
-          <Button type="button" onClick={createLink} disabled={loading || (expiration === 'custom' && !customExpiresAt)}>
+          <Button type="button" onClick={createLink} disabled={generateDisabled}>
             {loading ? 'Generating link...' : 'Generate link'}
           </Button>
 

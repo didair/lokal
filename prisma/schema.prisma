@@ -14,17 +14,18 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String
-  email     String    @unique
-  password  String
-  rootDir   String    @default("")
-  role      String    @default("U")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  shares    Share[]
-  tags      Tag[]
-  fileTags  FileTag[]
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String
+  rootDir        String    @default("")
+  role           String    @default("U")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  shares         Share[]   @relation("OwnedShares")
+  receivedShares Share[]   @relation("ReceivedShares")
+  tags           Tag[]
+  fileTags       FileTag[]
 }
 
 model Setting {
@@ -48,12 +49,14 @@ model Share {
   fileType     String
   access       String
   ownerId      String
+  recipientId  String?
   ownerRootDir String    @default("")
   expiresAt    DateTime?
   maxReads     Int?
   readCount    Int       @default(0)
   createdAt    DateTime  @default(now())
-  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User      @relation("OwnedShares", fields: [ownerId], references: [id], onDelete: Cascade)
+  recipient    User?     @relation("ReceivedShares", fields: [recipientId], references: [id], onDelete: SetNull)
 }
 
 model Tag {

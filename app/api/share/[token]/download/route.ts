@@ -14,7 +14,10 @@ async function getValidShare(token: string) {
 
   if (share.access === 'private') {
     const session = await getCurrentSession();
-    if (!(session as any)?.user?.id) return null;
+    const sessionUserId = (session as any)?.user?.id;
+
+    if (!sessionUserId) return null;
+    if (share.recipientId && share.recipientId !== sessionUserId && share.ownerId !== sessionUserId) return null;
   }
 
   return share;

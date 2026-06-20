@@ -38,18 +38,26 @@ export default async function SharePage({ params }: SharePageProps) {
 
   if (share.access === 'private') {
     const session = await getCurrentSession();
-    if (!(session as any)?.user?.id) {
+    const sessionUserId = (session as any)?.user?.id;
+
+    if (!sessionUserId) {
       redirect('/login');
+    }
+
+    if (share.recipientId && share.recipientId !== sessionUserId && share.ownerId !== sessionUserId) {
+      notFound();
     }
   }
 
   if (share.fileType === 'file') {
     return (
-      <div className="min-h-screen p-6 flex items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center p-6">
         <Card className="w-full max-w-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileIcon className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3 text-2xl tracking-tight">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                <FileIcon className="h-5 w-5" />
+              </span>
               {share.name}
             </CardTitle>
             <CardDescription>Shared by {share.owner.name}</CardDescription>
@@ -77,11 +85,13 @@ export default async function SharePage({ params }: SharePageProps) {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <Card>
+    <div className="min-h-dvh p-6">
+      <Card className="mx-auto max-w-6xl overflow-hidden">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderIcon className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-3 text-2xl tracking-tight">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+              <FolderIcon className="h-5 w-5" />
+            </span>
             {share.name}
           </CardTitle>
           <CardDescription>Shared by {share.owner.name}</CardDescription>

@@ -28,21 +28,24 @@ export default async function Settings() {
 				</BreadcrumbList>
 			</Breadcrumb>
 
-			<div className="flex items-center">
-				<h1 className="text-lg font-semibold md:text-2xl">Settings</h1>
+			<div className="flex flex-col gap-2">
+				<h1 className="text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">Settings</h1>
+				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+					Control server identity, invite users, and define which folders each account can access.
+				</p>
 			</div>
 
-			<div className="space-y-8">
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+			<div className="space-y-10">
+				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 					<div>
-						<h2 className="text-base font-semibold md:text-lg mb-4">Server settings</h2>
-						<p className="text-sm">
+						<h2 className="text-base font-semibold tracking-tight md:text-lg">Server settings</h2>
+						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
 							General server settings. (Only visible for owner)
 						</p>
 					</div>
 
-					<Card className="col-span-2 p-4">
-						<form className="grid gap-4" action={saveServerSettings}>
+					<Card className="col-span-2 p-6">
+						<form className="grid gap-5" action={saveServerSettings}>
 							<div className="grid gap-2">
 								<Label htmlFor="server-name">Server Name</Label>
 								<Input
@@ -61,17 +64,20 @@ export default async function Settings() {
 				</div>
 
 
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 					<div>
-						<h2 className="text-base font-semibold md:text-lg mb-4">Users</h2>
-						<p className="text-sm">
+						<h2 className="text-base font-semibold tracking-tight md:text-lg">Users</h2>
+						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
 							Manage users. (Only visible for admins)
 						</p>
 					</div>
 
-					<Card className="col-span-2">
-						<div className="p-4">
+					<Card className="col-span-2 overflow-hidden">
+						<div className="flex items-center justify-between gap-4 border-b border-zinc-200/80 p-5">
 							<h2 className="text-base font-semibold md:text-lg">Users</h2>
+							<NewUserDialog>
+								<Button>Add user</Button>
+							</NewUserDialog>
 						</div>
 
 						<Table>
@@ -109,11 +115,6 @@ export default async function Settings() {
 							</TableBody>
 						</Table>
 
-						<div className="p-4 flex">
-							<NewUserDialog>
-								<Button className="ml-auto">Add user</Button>
-							</NewUserDialog>
-						</div>
 					</Card>
 				</div>
 			</div>

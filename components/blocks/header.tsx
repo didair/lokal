@@ -14,7 +14,7 @@ export const Header = async () => {
 	const tags = await getTags();
 
 	return (
-		<header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+		<header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-zinc-200/80 bg-white/75 px-4 backdrop-blur-xl lg:px-6">
 			<Sheet>
 				<SheetTrigger asChild>
 					<Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -26,7 +26,9 @@ export const Header = async () => {
 				<SheetContent side="left" className="flex flex-col">
 					<nav className="grid gap-2 text-lg font-medium">
 						<Link href="#" className="flex items-center gap-2 text-lg font-semibold" prefetch={false}>
-							<Package2Icon className="h-6 w-6" />
+							<span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-500 text-white">
+								<Package2Icon className="h-5 w-5" />
+							</span>
 							<span className="sr-only">{server_name}</span>
 						</Link>
 
@@ -87,12 +89,12 @@ export const Header = async () => {
 
 			<div className="w-full flex-1">
 				<form>
-					<div className="relative">
+					<div className="relative max-w-xl">
 						<SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 						<Input
 							type="search"
 							placeholder="Search files..."
-							className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+							className="w-full appearance-none bg-white/75 pl-8 shadow-sm"
 						/>
 					</div>
 				</form>

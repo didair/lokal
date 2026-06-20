@@ -10,6 +10,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mydb
       - DATA_DIR=/data
+      - LOKAL_PUBLIC_URL=http://lokal.test
       - RUN_MIGRATIONS=true
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true

@@ -9,6 +9,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mydb
       - DATA_DIR=/data
+      # Set this when Lokal is served behind a domain/proxy so generated links use the public HTTPS URL.
+      # Example: LOKAL_PUBLIC_URL=https://files.skurt.cloud
+      - LOKAL_PUBLIC_URL=
       - RUN_MIGRATIONS=true
     volumes:
       - /path/to/data:/data

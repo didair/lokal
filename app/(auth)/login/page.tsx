@@ -15,10 +15,10 @@ export default async function Login({ searchParams }: LoginProps) {
   const { error } = await searchParams;
 
   return (
-    <div className="min-w-full min-h-full flex items-center justify-center py-6 overflow-auto">
+    <div className="flex min-h-dvh min-w-full items-center justify-center overflow-auto px-4 py-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl tracking-tight">Login</CardTitle>
           <CardDescription>Enter your email below to login to your account.</CardDescription>
         </CardHeader>
 

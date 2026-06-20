@@ -29,10 +29,10 @@ export default async function Register({ searchParams }: RegisterProps) {
   }
 
   return (
-    <div className="min-w-full min-h-full flex items-center justify-center py-6 overflow-auto">
-      <Card className="mx-auto max-w-sm">
+    <div className="flex min-h-dvh min-w-full items-center justify-center overflow-auto px-4 py-8">
+      <Card className="mx-auto w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-xl">Sign Up</CardTitle>
+          <CardTitle className="text-2xl tracking-tight">Sign Up</CardTitle>
           <CardDescription>
             Welcome! Begin by filling in your details below
           </CardDescription>

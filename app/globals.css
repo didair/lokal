@@ -66,11 +66,24 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgb(244 63 94 / 0.08), transparent 24rem),
+      radial-gradient(circle at 80% 0%, rgb(24 24 27 / 0.06), transparent 22rem),
+      linear-gradient(180deg, rgb(250 250 250), rgb(255 255 255) 28rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    @apply bg-rose-100 text-rose-950;
   }
 }

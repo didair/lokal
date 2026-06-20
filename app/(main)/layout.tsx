@@ -9,16 +9,18 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+    <div className="grid min-h-dvh w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r border-zinc-200/80 bg-white/70 backdrop-blur-xl md:block">
         <Sidebar />
-      </div>
+      </aside>
 
       <div className="flex flex-col">
         <Header />
 
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {children}
+        <main id="main-content" className="flex flex-1 flex-col px-4 py-5 lg:px-8 lg:py-8">
+          <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

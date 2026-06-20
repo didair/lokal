@@ -25,11 +25,14 @@ export default async function SharedWithMePage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Shared with me</h1>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">Shared with me</h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          Files and folders other Lokal users have shared privately with you.
+        </p>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -43,7 +46,11 @@ export default async function SharedWithMePage() {
             {shares.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-muted-foreground">
-                  Nothing has been shared with you yet.
+                  <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
+                    <UsersIcon className="h-8 w-8 text-rose-500" />
+                    <span className="text-sm font-semibold text-zinc-700">Nothing has been shared with you yet.</span>
+                    <span className="max-w-sm text-xs leading-5 text-muted-foreground">Private links from other users will appear here.</span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : null}

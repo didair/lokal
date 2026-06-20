@@ -30,7 +30,9 @@ export const NewUserDialog = (props: any) => {
 
 	const setClipboardContents = (event: any) => {
 		event.preventDefault();
-		navigator.clipboard.writeText(window.location.origin + '/register?invite=' + link);
+		if (link) {
+			navigator.clipboard.writeText(link);
+		}
 	};
 
 	const onLinkSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -50,7 +52,7 @@ export const NewUserDialog = (props: any) => {
 		.then(async (response) => {
 			const body = await response.json();
 			if (body.id != null) {
-				setLink(body.id);
+				setLink(body.link);
 			}
 		});
 	};
@@ -108,7 +110,7 @@ export const NewUserDialog = (props: any) => {
 
 							<Input
 								id="link"
-								value={window.location.origin + '/register?invite=' + link}
+								value={link}
 								readOnly
 							/>
 						</div>

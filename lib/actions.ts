@@ -189,8 +189,16 @@ export async function getSharedWithMe(): Promise<SharedWithMeShare[]> {
 			access: 'private',
 			ownerId: { not: currentUser.id },
 			OR: [
-				{ expiresAt: null },
-				{ expiresAt: { gt: new Date() } },
+				{ recipientId: currentUser.id },
+				{ recipientId: null },
+			],
+			AND: [
+				{
+					OR: [
+						{ expiresAt: null },
+						{ expiresAt: { gt: new Date() } },
+					],
+				},
 			],
 		},
 		include: {
@@ -209,4 +217,49 @@ export async function getTags() {
 		where: { ownerId: currentUser.id },
 		orderBy: { name: 'asc' },
 	});
+}
+
+export async function getDashboardOverview() {
+	const currentUser = await getCurrentUser();
+	const now = new Date();
+
+	const [tags, sharedWithMe, activeShares, users] = await Promise.all([
+		prisma.tag.count({ where: { ownerId: currentUser.id } }),
+		prisma.share.count({
+			where: {
+				access: 'private',
+				ownerId: { not: currentUser.id },
+				OR: [
+					{ recipientId: currentUser.id },
+					{ recipientId: null },
+				],
+				AND: [
+					{
+						OR: [
+							{ expiresAt: null },
+							{ expiresAt: { gt: now } },
+						],
+					},
+				],
+			},
+		}),
+		prisma.share.count({
+			where: {
+				ownerId: currentUser.id,
+				OR: [
+					{ expiresAt: null },
+					{ expiresAt: { gt: now } },
+				],
+			},
+		}),
+		currentUser.role === 'O' ? prisma.user.count() : Promise.resolve(0),
+	]);
+
+	return {
+		tags,
+		sharedWithMe,
+		activeShares,
+		users,
+		role: currentUser.role,
+	};
 }

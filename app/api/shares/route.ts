@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/user';
+import { getPublicUrl } from '@/lib/public-url';
 
 type ExpirationMode = 'after-read' | '24h' | 'custom';
 type ShareAccess = 'public' | 'private';
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const path = searchParams.get('path');
   const sharePath = path ? cleanSharePath(path) : null;
+  const publicUrl = getPublicUrl(request);
 
   const shares = await prisma.share.findMany({
     where: {
@@ -69,15 +71,26 @@ export async function GET(request: Request) {
       token: true,
       access: true,
       path: true,
+      recipientId: true,
       expiresAt: true,
       maxReads: true,
       readCount: true,
       createdAt: true,
+      recipient: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json(shares.filter(isShareActive));
+  return NextResponse.json(shares.filter(isShareActive).map((share) => ({
+    ...share,
+    link: `${publicUrl}/share/${share.token}`,
+  })));
 }
 
 export async function POST(request: Request) {
@@ -92,8 +105,9 @@ export async function POST(request: Request) {
   const name = body.name?.toString() || sharePath.split('/').pop() || 'Shared item';
   const fileType = body.fileType === 'dir' ? 'dir' : 'file';
   const access: ShareAccess = body.access === 'private' ? 'private' : 'public';
+  const recipientId = access === 'private' && body.recipientId ? body.recipientId.toString() : null;
   const expiration = getExpiration(body.expiration ?? '24h', body.customExpiresAt);
-  const origin = body.origin?.toString() || new URL(request.url).origin;
+  const publicUrl = getPublicUrl(request);
 
   const user = await prisma.user.findUnique({
     where: { id: ownerId },
@@ -104,6 +118,24 @@ export async function POST(request: Request) {
     return NextResponse.json(null, { status: 401 });
   }
 
+  if (access === 'private') {
+    if (!recipientId) {
+      return NextResponse.json({ error: 'Recipient is required' }, { status: 400 });
+    }
+
+    const recipient = await prisma.user.findFirst({
+      where: {
+        id: recipientId,
+        NOT: { id: ownerId },
+      },
+      select: { id: true },
+    });
+
+    if (!recipient) {
+      return NextResponse.json({ error: 'Recipient is required' }, { status: 400 });
+    }
+  }
+
   const share = await prisma.share.create({
     data: {
       name,
@@ -111,12 +143,37 @@ export async function POST(request: Request) {
       fileType,
       access,
       ownerId: user.id,
+      recipientId,
       ownerRootDir: user.rootDir,
       ...expiration,
     },
   });
 
   return NextResponse.json({
-    link: `${origin}/share/${share.token}`,
+    link: `${publicUrl}/share/${share.token}`,
   });
+}
+
+export async function DELETE(request: Request) {
+  const ownerId = await getUserId();
+
+  if (!ownerId) {
+    return NextResponse.json(null, { status: 401 });
+  }
+
+  const body = await request.json();
+  const id = body.id?.toString();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Share id is required' }, { status: 400 });
+  }
+
+  await prisma.share.deleteMany({
+    where: {
+      id,
+      ownerId,
+    },
+  });
+
+  return NextResponse.json({ success: true });
 }

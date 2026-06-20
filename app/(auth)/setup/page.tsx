@@ -17,10 +17,10 @@ export default async function Setup() {
   }
 
   return (
-    <div className="min-w-full min-h-full flex items-center justify-center py-6 overflow-auto">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-dvh min-w-full items-center justify-center overflow-auto px-4 py-8">
+      <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Setup new server</CardTitle>
+          <CardTitle className="text-2xl tracking-tight">Setup new server</CardTitle>
           <CardDescription>Welcome to Lokal! Get started by creating your user. You will become the owner of this server</CardDescription>
         </CardHeader>
 

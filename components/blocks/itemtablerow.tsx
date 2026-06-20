@@ -46,7 +46,7 @@ export const ItemTableRow = ({
 		<>
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
-				<TableRow onClick={() => onClick(file)} onDoubleClick={onItemDoubleClick} style={{ height: 49 }}>
+				<TableRow onClick={() => onClick(file)} onDoubleClick={onItemDoubleClick} className="h-14">
 					{/* Name */}
 					<TableCell>
 						<div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export const ItemTableRow = ({
 							</Link>
 
 							{activeShares.length > 0 ?
-								<Share2 className="h-4 w-4 text-muted-foreground" aria-label="Active share link" />
+								<Share2 className="h-4 w-4 text-rose-500" aria-label="Active share link" />
 							: null}
 
 							{showPath ?

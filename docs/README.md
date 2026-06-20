@@ -27,7 +27,16 @@ Production is intended to run from a prebuilt image, so the NAS does not need a 
 
 1. Copy `docker-compose.yml` to the NAS.
 2. Change the data volume from `/path/to/data:/data` to your real NAS data path.
-3. Start the stack:
+3. If Lokal is served through a public domain or reverse proxy, set `LOKAL_PUBLIC_URL` in `docker-compose.yml`:
+
+```yaml
+environment:
+  - LOKAL_PUBLIC_URL=https://files.skurt.cloud
+```
+
+This makes generated share and invite links use the public HTTPS URL instead of the container's local IP/port.
+
+4. Start the stack:
 
 ```sh
 docker compose pull

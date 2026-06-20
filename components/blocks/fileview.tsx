@@ -219,7 +219,21 @@ export const FileView = () => {
 				{selectedTagId && files.length === 0 ?
 					<TableRow>
 						<TableCell colSpan={4} className="text-muted-foreground">
-							No files or folders have this tag yet.
+							<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
+								<span className="text-sm font-semibold text-zinc-700">No files or folders have this tag yet.</span>
+								<span className="max-w-sm text-xs leading-5 text-muted-foreground">Add this tag from the file table to make matching items appear here.</span>
+							</div>
+						</TableCell>
+					</TableRow>
+				: null}
+
+				{!selectedTagId && files.length === 0 ?
+					<TableRow>
+						<TableCell colSpan={4} className="text-muted-foreground">
+							<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
+								<span className="text-sm font-semibold text-zinc-700">This directory is empty.</span>
+								<span className="max-w-sm text-xs leading-5 text-muted-foreground">Drop files anywhere on the app to upload them into the current directory.</span>
+							</div>
 						</TableCell>
 					</TableRow>
 				: null}
