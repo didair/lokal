@@ -14,18 +14,21 @@ generator client {
 }
 
 model User {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  email          String    @unique
+  email          String       @unique
   password       String
-  rootDir        String    @default("")
-  role           String    @default("U")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  shares         Share[]   @relation("OwnedShares")
-  receivedShares Share[]   @relation("ReceivedShares")
+  rootDir        String       @default("")
+  role           String       @default("U")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  shares         Share[]      @relation("OwnedShares")
+  receivedShares Share[]      @relation("ReceivedShares")
   tags           Tag[]
   fileTags       FileTag[]
+  createdApps    App[]        @relation("CreatedApps")
+  appTokens      AppToken[]
+  dataRecords    DataRecord[]
 }
 
 model Setting {
@@ -81,4 +84,68 @@ model FileTag {
   tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([ownerId, path, tagId])
+}
+
+model App {
+  id            String       @id @default(cuid())
+  name          String
+  slug          String       @unique
+  description   String?
+  developerName String?
+  clientId      String       @unique
+  enabled       Boolean      @default(true)
+  createdById   String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  createdBy     User         @relation("CreatedApps", fields: [createdById], references: [id], onDelete: Cascade)
+  datasets      AppDataset[]
+  tokens        AppToken[]
+  records       DataRecord[]
+}
+
+model AppDataset {
+  id        String       @id @default(cuid())
+  appId     String
+  name      String
+  kind      String
+  schema    Json
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  app       App          @relation(fields: [appId], references: [id], onDelete: Cascade)
+  records   DataRecord[]
+
+  @@unique([appId, name])
+}
+
+model AppToken {
+  id        String    @id @default(cuid())
+  appId     String
+  userId    String
+  tokenHash String    @unique
+  name      String
+  scopes    String[]
+  expiresAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  app       App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DataRecord {
+  id        String     @id @default(cuid())
+  appId     String
+  datasetId String
+  ownerId   String
+  key       String?
+  value     Json
+  version   Int        @default(1)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+  app       App        @relation(fields: [appId], references: [id], onDelete: Cascade)
+  dataset   AppDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, datasetId, ownerId, key])
+  @@index([appId, datasetId, ownerId])
 }

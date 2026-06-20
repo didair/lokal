@@ -1,4 +1,5 @@
 import { NewUserDialog } from "@/components/blocks/newuserdialog";
+import { AppsManager } from "@/components/blocks/appsmanager";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,6 +116,19 @@ export default async function Settings() {
 							</TableBody>
 						</Table>
 
+					</Card>
+				</div>
+
+				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+					<div>
+						<h2 className="text-base font-semibold tracking-tight md:text-lg">Apps</h2>
+						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+							Register external apps and create user-bound API tokens for app-private datasets.
+						</p>
+					</div>
+
+					<Card className="col-span-2 p-6">
+						<AppsManager />
 					</Card>
 				</div>
 			</div>
