@@ -118,10 +118,11 @@ export const TagSelector = ({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="h-6 w-6 rounded-full" aria-label="Add tag">
+          <Button variant="outline" size="icon" className="h-6 w-6 rounded-full cursor-pointer" aria-label="Add tag">
             <Plus className="h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="start" className="w-56">
           {tags.length === 0 ? (
             <DropdownMenuItem disabled>No tags yet</DropdownMenuItem>
