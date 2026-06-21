@@ -5,7 +5,7 @@ import type { File } from "@/lib/file-utils";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "../ui/context-menu";
-import { FileIcon, FolderIcon, CircleAlertIcon, Share2 } from "lucide-react";
+import { FileIcon, FolderIcon, CircleAlertIcon, Share2, MoreHorizontal } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
 import { ShareDialog, type ShareSummary } from "./sharedialog";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 export const ItemTableRow = ({
 	file,
@@ -111,69 +112,126 @@ export const ItemTableRow = ({
 		refreshData();
 	};
 
+	const hasMobileActions = actions !== 'none';
+
 	return (
 		<>
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
 				<TableRow onClick={() => onClick(file)} onDoubleClick={onItemDoubleClick} className="h-auto md:h-14">
 					{/* Name */}
-					<TableCell className="py-3">
-						<div className="flex items-start gap-2">
+					<TableCell className="py-2 md:py-2">
+						<div className="flex items-start gap-2 md:items-center">
 							{/* Icon */}
 							{file.type == 'dir' ?
-								<FolderIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+								<FolderIcon className="mt-2 h-4 w-4 shrink-0 text-muted-foreground md:mt-0" />
 							: null}
 
 							{file.type == 'file' ?
-								<FileIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+								<FileIcon className="mt-2 h-4 w-4 shrink-0 text-muted-foreground md:mt-0" />
 							: null}
 
 							{file.type == 'other' ?
-								<CircleAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+								<CircleAlertIcon className="mt-2 h-4 w-4 shrink-0 text-muted-foreground md:mt-0" />
 							: null}
 
 							<div className="min-w-0 flex-1">
-								<div className="flex flex-wrap items-center gap-2">
-									{/* Name */}
-									<Link
-										href={href ?? '#'}
-										onClick={(e) => {
-											if (!href) {
-												e.preventDefault();
-												onNavigate(file);
-											}
-										}}
-										className="break-all font-medium"
-										prefetch={false}
-									>
-										{file.name}
-									</Link>
+								<div className="flex items-start gap-2">
+									<div className="min-w-0 flex-1">
+										<div className="flex min-h-8 flex-wrap items-center gap-2 md:min-h-0">
+											{/* Name */}
+											<Link
+												href={href ?? '#'}
+												onClick={(e) => {
+													if (!href) {
+														e.preventDefault();
+														onNavigate(file);
+													}
+												}}
+												className="break-all font-medium"
+												prefetch={false}
+											>
+												{file.name}
+											</Link>
 
-									{activeShares.length > 0 ?
-										<Share2 className="h-4 w-4 shrink-0 text-rose-500" aria-label="Active share link" />
-									: null}
+											{activeShares.length > 0 ?
+												<Share2 className="h-4 w-4 shrink-0 text-rose-500" aria-label="Active share link" />
+											: null}
 
-									{showPath ?
-										<span className="break-all text-xs text-muted-foreground">
-											/{itemPath.replace(/^\/+/, '')}
-										</span>
-									: null}
+											{showPath ?
+												<span className="break-all text-xs text-muted-foreground">
+													/{itemPath.replace(/^\/+/, '')}
+												</span>
+											: null}
+										</div>
+									</div>
+
+									<div className="flex shrink-0 items-center gap-1 md:hidden" onClick={(event) => event.stopPropagation()}>
+										{!secondaryCell ? (
+											<TagSelector
+												path={itemPath}
+												tags={tags}
+												assignedTags={assignedTags}
+												onChange={onTagsChange}
+												mode="trigger"
+												triggerIcon="tag"
+												triggerClassName="h-7 w-7"
+											/>
+										) : null}
+
+										{hasMobileActions ? (
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button variant="outline" size="icon" className="h-7 w-7 rounded-full" aria-label="Open file actions">
+														<MoreHorizontal className="h-3.5 w-3.5" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													{actions === 'shared' && href ? (
+														<DropdownMenuItem asChild>
+															<Link href={href} className="cursor-pointer" prefetch={false}>
+																Open shared link
+															</Link>
+														</DropdownMenuItem>
+													) : null}
+
+													{actions === 'owner' && file.type == 'file' ?
+														<DropdownMenuItem asChild>
+															<a href={`/file/u?path=${download_path}`} target="_blank" className="cursor-pointer">
+																Download
+															</a>
+														</DropdownMenuItem>
+													: null}
+
+													{actions === 'owner' ? (
+														<>
+															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</DropdownMenuItem>
+															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setError(''); setRenameOpen(true); }}>Rename</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(event) => { event.preventDefault(); setError(''); setDeleteOpen(true); }}>Delete</DropdownMenuItem>
+														</>
+													) : null}
+												</DropdownMenuContent>
+											</DropdownMenu>
+										) : null}
+									</div>
 								</div>
 
 								{secondaryCell ? (
 									<div className="mt-1 text-xs text-muted-foreground md:hidden">
 										{secondaryCell}
 									</div>
-								) : (
-									<div className="mt-2 md:hidden" onClick={(event) => event.stopPropagation()}>
+								) : assignedTags.length > 0 ? (
+									<div className="mt-1 md:hidden" onClick={(event) => event.stopPropagation()}>
 										<TagSelector
 											path={itemPath}
 											tags={tags}
 											assignedTags={assignedTags}
 											onChange={onTagsChange}
+											mode="tags"
 										/>
 									</div>
-								)}
+								) : null}
 							</div>
 						</div>
 					</TableCell>

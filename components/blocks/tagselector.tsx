@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, TagIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -44,11 +44,17 @@ export const TagSelector = ({
   tags,
   assignedTags,
   onChange,
+  mode = "full",
+  triggerIcon = "plus",
+  triggerClassName = "h-6 w-6",
 }: {
   path: string;
   tags: Tag[];
   assignedTags: Tag[];
   onChange: () => void;
+  mode?: "full" | "trigger" | "tags";
+  triggerIcon?: "plus" | "tag";
+  triggerClassName?: string;
 }) => {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -104,22 +110,31 @@ export const TagSelector = ({
     refreshTags();
   };
 
+  const tagPills = assignedTags.map((tag) => (
+    <span
+      key={tag.id}
+      className="rounded-full border px-2 py-0.5 text-xs font-medium"
+      style={{ borderColor: tag.color, color: tag.color }}
+    >
+      {tag.name}
+    </span>
+  ));
+
+  if (mode === "tags") {
+    if (assignedTags.length === 0) {
+      return null;
+    }
+
+    return <div className="flex flex-wrap items-center gap-1">{tagPills}</div>;
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-1">
-      {assignedTags.map((tag) => (
-        <span
-          key={tag.id}
-          className="rounded-full border px-2 py-0.5 text-xs font-medium"
-          style={{ borderColor: tag.color, color: tag.color }}
-        >
-          {tag.name}
-        </span>
-      ))}
-
+      {mode === "full" ? tagPills : null}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="h-6 w-6 rounded-full cursor-pointer" aria-label="Add tag">
-            <Plus className="h-3.5 w-3.5" />
+          <Button variant="outline" size="icon" className={`${triggerClassName} rounded-full cursor-pointer`} aria-label="Add tag">
+            {triggerIcon === "tag" ? <TagIcon className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           </Button>
         </DropdownMenuTrigger>
 
