@@ -5,7 +5,7 @@ import type { File } from "@/lib/file-utils";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "../ui/context-menu";
-import { FileIcon, FolderIcon, CircleAlertIcon, Share2, MoreHorizontal, Info, PanelRightOpen } from "lucide-react";
+import { FileIcon, FolderIcon, CircleAlertIcon, Share2, MoreHorizontal, Info, PanelRightOpen, Download } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
 import { ShareDialog, type ShareSummary } from "./sharedialog";
@@ -449,6 +449,12 @@ export const ItemTableRow = ({
 							/>
 						</div>
 						<div className="flex gap-2">
+							<Button type="button" variant="outline" asChild>
+								<a href={`/file/u?path=${encodeURIComponent(itemPath)}`}>
+									<Download className="mr-2 h-4 w-4" />
+									Download
+								</a>
+							</Button>
 							<Button type="button" onClick={() => setShareOpen(true)}>
 								<Share2 className="mr-2 h-4 w-4" />
 								Share

@@ -131,7 +131,7 @@ export const TagSelector = ({
   return (
     <div className="flex flex-wrap items-center gap-1">
       {mode === "full" ? tagPills : null}
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" className={`${triggerClassName} rounded-full cursor-pointer`} aria-label="Add tag">
             {triggerIcon === "tag" ? <TagIcon className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
