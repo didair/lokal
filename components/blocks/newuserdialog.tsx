@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { DirInput } from "../ui/dirinput";
+import { DirectorySelect } from "../ui/dirinput";
 
 export const NewUserDialog = (props: any) => {
 	const [link, setLink] = useState<null | string>(null);
@@ -73,7 +73,7 @@ export const NewUserDialog = (props: any) => {
 								Root directory
 							</Label>
 
-							<DirInput />
+							<DirectorySelect />
 						</div>
 
 						<div>

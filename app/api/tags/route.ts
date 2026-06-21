@@ -53,3 +53,34 @@ export async function POST(request: Request) {
 
   return NextResponse.json(tag);
 }
+
+export async function DELETE(request: Request) {
+  const ownerId = await getUserId();
+
+  if (!ownerId) {
+    return NextResponse.json(null, { status: 401 });
+  }
+
+  const body = await request.json();
+  const id = body.id?.toString();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Tag id is required' }, { status: 400 });
+  }
+
+  const tag = await prisma.tag.findFirst({
+    where: { id, ownerId },
+    select: { id: true },
+  });
+
+  if (!tag) {
+    return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
+  }
+
+  await prisma.$transaction([
+    prisma.fileTag.deleteMany({ where: { ownerId, tagId: id } }),
+    prisma.tag.delete({ where: { id } }),
+  ]);
+
+  return NextResponse.json({ success: true });
+}

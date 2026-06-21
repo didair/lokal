@@ -3,9 +3,25 @@ import { getFilesInDirectory } from "@/lib/file-utils";
 import { getCurrentSession } from "@/lib/user";
 import { getServerIsSetup } from "@/lib/actions";
 import prisma from "@/lib/prisma";
-import { DATA_DIR } from "@/lib/data-dir";
+import { DATA_DIR, dataPath } from "@/lib/data-dir";
+import path from "path";
 
-export async function GET() {
+function cleanRelativePath(input: string | null) {
+	return (input ?? '')
+		.replace(/\\/g, '/')
+		.split('/')
+		.filter(Boolean)
+		.filter((part) => part !== '.' && part !== '..')
+		.join('/');
+}
+
+function getParentPath(input: string) {
+	const parts = cleanRelativePath(input).split('/').filter(Boolean);
+	parts.pop();
+	return parts.length ? `/${parts.join('/')}` : '/';
+}
+
+export async function GET(request: Request) {
 	let valid = false;
 	const isServerSetup = await getServerIsSetup();
 
@@ -29,8 +45,23 @@ export async function GET() {
 		return NextResponse.json(null);
 	}
 
-	const root_dir = DATA_DIR;
+	const url = new URL(request.url);
+	const currentPath = cleanRelativePath(url.searchParams.get('path'));
+	const rootPath = path.resolve(DATA_DIR);
+	const targetPath = path.resolve(dataPath(currentPath));
+
+	if (targetPath !== rootPath && !targetPath.startsWith(`${rootPath}${path.sep}`)) {
+		return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+	}
+
 	const setting = await prisma.setting.findUnique({ where: { id: 'files-ignore-ds-store' } });
-	const response = getFilesInDirectory(root_dir, { ignoreDsStore: setting?.value === 'true' }).filter((file) => file.type === 'dir');
-	return NextResponse.json(response);
+	const dirs = getFilesInDirectory(targetPath, { ignoreDsStore: setting?.value === 'true' })
+		.filter((file) => file.type === 'dir')
+		.sort((a, b) => a.name.localeCompare(b.name));
+
+	return NextResponse.json({
+		path: currentPath ? `/${currentPath}` : '/',
+		parent: currentPath ? getParentPath(currentPath) : null,
+		dirs,
+	});
 };

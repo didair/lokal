@@ -15,6 +15,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DirectorySelect } from "../ui/dirinput";
 
 export const ItemTableRow = ({
 	file,
@@ -51,6 +52,7 @@ export const ItemTableRow = ({
 }) => {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
+	const [moveOpen, setMoveOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [renameValue, setRenameValue] = useState(file.name);
 	const [error, setError] = useState('');
@@ -91,6 +93,30 @@ export const ItemTableRow = ({
 		refreshData();
 	};
 
+	const moveItem = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setSaving(true);
+		setError('');
+		const formData = new FormData(event.currentTarget);
+		const destinationPath = formData.get('destinationPath')?.toString() || '/';
+
+		const response = await fetch('/api/files', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ path: itemPath, destinationPath }),
+		});
+		const body = await response.json().catch(() => ({}));
+		setSaving(false);
+
+		if (!response.ok) {
+			setError(body.error || 'Could not move item');
+			return;
+		}
+
+		setMoveOpen(false);
+		refreshData();
+	};
+
 	const deleteItem = async () => {
 		setSaving(true);
 		setError('');
@@ -113,6 +139,10 @@ export const ItemTableRow = ({
 	};
 
 	const hasMobileActions = actions !== 'none';
+	const openMoveDialog = () => {
+		setError('');
+		setMoveOpen(true);
+	};
 
 	return (
 		<>
@@ -206,6 +236,7 @@ export const ItemTableRow = ({
 													{actions === 'owner' ? (
 														<>
 															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</DropdownMenuItem>
+															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); openMoveDialog(); }}>Move</DropdownMenuItem>
 															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setError(''); setRenameOpen(true); }}>Rename</DropdownMenuItem>
 															<DropdownMenuSeparator />
 															<DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(event) => { event.preventDefault(); setError(''); setDeleteOpen(true); }}>Delete</DropdownMenuItem>
@@ -278,6 +309,7 @@ export const ItemTableRow = ({
 				{actions === 'owner' ? (
 					<>
 						<ContextMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</ContextMenuItem>
+						<ContextMenuItem onSelect={(event) => { event.preventDefault(); openMoveDialog(); }}>Move</ContextMenuItem>
 						<ContextMenuItem onSelect={(event) => { event.preventDefault(); setError(''); setRenameOpen(true); }}>Rename</ContextMenuItem>
 						<ContextMenuSeparator />
 						<ContextMenuItem className="text-red-600 focus:text-red-600" onSelect={(event) => { event.preventDefault(); setError(''); setDeleteOpen(true); }}>Delete</ContextMenuItem>
@@ -325,6 +357,38 @@ export const ItemTableRow = ({
 						</Button>
 						<Button type="submit" disabled={saving || !renameValue.trim() || renameValue === file.name}>
 							{saving ? 'Renaming...' : 'Rename'}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+
+		<Dialog open={moveOpen} onOpenChange={setMoveOpen}>
+			<DialogContent>
+				<form onSubmit={moveItem}>
+					<DialogHeader>
+						<DialogTitle>Move {file.type === 'dir' ? 'folder' : 'file'}</DialogTitle>
+						<DialogDescription>
+							Move <span className="font-medium text-zinc-800">{file.name}</span> to another folder.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="grid gap-2 py-5">
+						<Label>Destination folder</Label>
+						<DirectorySelect
+							key={`${itemPath}-${currentPath}`}
+							name="destinationPath"
+							defaultValue={currentPath || '/'}
+						/>
+						{error ? <p className="text-sm text-red-600">{error}</p> : null}
+					</div>
+
+					<DialogFooter>
+						<Button type="button" variant="outline" onClick={() => setMoveOpen(false)}>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={saving}>
+							{saving ? 'Moving...' : 'Move'}
 						</Button>
 					</DialogFooter>
 				</form>

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getServerIsSetup, setupServerAction } from '@/lib/actions';
-import { DirInput } from '@/components/ui/dirinput';
+import { DirectorySelect } from '@/components/ui/dirinput';
 
 export default async function Setup() {
   const isSetup = await getServerIsSetup();
@@ -64,7 +64,7 @@ export default async function Setup() {
 
             <div>
               <Label>User files location</Label>
-              <DirInput />
+              <DirectorySelect />
             </div>
           </CardContent>
 

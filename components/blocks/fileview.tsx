@@ -2,14 +2,18 @@
 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { ItemTableRow } from "@/components/blocks/itemtablerow"
-import { useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { File } from "@/lib/file-utils";
 import Link from "next/link";
-import { FolderUp } from "lucide-react";
+import { FolderPlus, FolderUp } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { FileTag, Tag } from "./tagselector";
 import { normalizeTagPath } from "./tagselector";
 import type { ShareSummary } from "./sharedialog";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 type FileListItem = File & {
 	path?: string;
@@ -21,6 +25,10 @@ export const FileView = () => {
 	const [fileTags, setFileTags] = useState<FileTag[]>([]);
 	const [shares, setShares] = useState<ShareSummary[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [createFolderOpen, setCreateFolderOpen] = useState(false);
+	const [folderName, setFolderName] = useState("");
+	const [folderError, setFolderError] = useState("");
+	const [savingFolder, setSavingFolder] = useState(false);
 	const requestIdRef = useRef(0);
 	const searchParams = useSearchParams();
 	const routePath = searchParams.get('path') ?? '/';
@@ -33,6 +41,7 @@ export const FileView = () => {
 		const requestId = requestIdRef.current + 1;
 		requestIdRef.current = requestId;
 		setIsLoading(true);
+		setFiles([]);
 
 		const finishLoading = () => {
 			if (requestIdRef.current === requestId) {
@@ -201,6 +210,29 @@ export const FileView = () => {
 		return shares.filter((share) => share.path === itemPath);
 	};
 
+	const createFolder = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setSavingFolder(true);
+		setFolderError("");
+
+		const response = await fetch('/api/files', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ path, name: folderName }),
+		});
+		const body = await response.json().catch(() => ({}));
+		setSavingFolder(false);
+
+		if (!response.ok) {
+			setFolderError(body.error || 'Could not create folder');
+			return;
+		}
+
+		setCreateFolderOpen(false);
+		setFolderName("");
+		fetchData(path, selectedTagId);
+	};
+
 	return (
 		<div className="relative">
 			<div
@@ -220,6 +252,19 @@ export const FileView = () => {
 				</div>
 			</div>
 
+			{!selectedTagId ? (
+				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/80 px-4 py-3">
+					<div className="min-w-0 text-sm text-muted-foreground">
+						<span className="hidden sm:inline">Current folder: </span>
+						<span className="font-medium text-zinc-800">{path}</span>
+					</div>
+					<Button type="button" size="sm" variant="outline" onClick={() => { setFolderError(""); setCreateFolderOpen(true); }}>
+						<FolderPlus className="mr-2 h-4 w-4" />
+						New folder
+					</Button>
+				</div>
+			) : null}
+
 			<Table>
 				<TableHeader>
 					<TableRow>
@@ -231,7 +276,7 @@ export const FileView = () => {
 				</TableHeader>
 
 				<TableBody>
-					{parent != null && !selectedTagId ?
+					{!isLoading && parent != null && !selectedTagId ?
 						<TableRow>
 							<TableCell style={{ height: 49 }}>
 								<div className="flex items-center gap-2">
@@ -248,7 +293,7 @@ export const FileView = () => {
 						</TableRow>
 						: null}
 
-					{selectedTagId && files.length === 0 ?
+					{!isLoading && selectedTagId && files.length === 0 ?
 						<TableRow>
 							<TableCell colSpan={4} className="text-muted-foreground">
 								<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
@@ -259,7 +304,7 @@ export const FileView = () => {
 						</TableRow>
 					: null}
 
-					{!selectedTagId && files.length === 0 ?
+					{!isLoading && !selectedTagId && files.length === 0 ?
 						<TableRow>
 							<TableCell colSpan={4} className="text-muted-foreground">
 								<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
@@ -270,7 +315,7 @@ export const FileView = () => {
 						</TableRow>
 					: null}
 
-					{[...files]
+					{!isLoading ? [...files]
 						.sort((file) => file.type == 'dir' ? -1 : 1)
 						.map((file, index) => {
 							return <ItemTableRow
@@ -286,9 +331,43 @@ export const FileView = () => {
 								onSharesChange={fetchShares}
 								onNavigate={onItemClick}
 							/>
-						})}
+						}) : null}
 				</TableBody>
 			</Table>
+
+			<Dialog open={createFolderOpen} onOpenChange={setCreateFolderOpen}>
+				<DialogContent>
+					<form onSubmit={createFolder}>
+						<DialogHeader>
+							<DialogTitle>Create folder</DialogTitle>
+							<DialogDescription>
+								Create a new folder inside <span className="font-medium text-zinc-800">{path}</span>.
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="grid gap-2 py-5">
+							<Label htmlFor="folder-name">Folder name</Label>
+							<Input
+								id="folder-name"
+								value={folderName}
+								onChange={(event) => setFolderName(event.target.value)}
+								placeholder="Photos"
+								autoFocus
+							/>
+							{folderError ? <p className="text-sm text-red-600">{folderError}</p> : null}
+						</div>
+
+						<DialogFooter>
+							<Button type="button" variant="outline" onClick={() => setCreateFolderOpen(false)}>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={savingFolder || !folderName.trim()}>
+								{savingFolder ? 'Creating...' : 'Create folder'}
+							</Button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

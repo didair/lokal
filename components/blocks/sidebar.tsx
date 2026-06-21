@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { FileIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
+import { FileIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { SidebarItem } from "../ui/sidebaritem";
 import { getServerName, getTags } from "@/lib/actions";
+import { SidebarTagItem } from "./sidebartagitem";
 
 export const Sidebar = async () => {
 	const server_name = await getServerName();
@@ -48,10 +49,7 @@ export const Sidebar = async () => {
 					</div>
 
 					{tags.map((tag) => (
-						<SidebarItem href={`/files?tag=${tag.id}`} key={tag.id}>
-							<TagIcon className="h-4 w-4" style={{ color: tag.color }} />
-							{tag.name}
-						</SidebarItem>
+						<SidebarTagItem tag={tag} key={tag.id} />
 					))}
 				</nav>
 			</div>

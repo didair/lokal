@@ -63,6 +63,14 @@ function childPathPrefix(itemPath: string) {
 	return itemPath.endsWith('/') ? itemPath : `${itemPath}/`;
 }
 
+function filePathIsSameOrChild(candidatePath: string, parentPath: string) {
+	if (!candidatePath || !parentPath) {
+		return false;
+	}
+
+	return candidatePath === parentPath || candidatePath.startsWith(childPathPrefix(parentPath));
+}
+
 async function updateRelatedPaths(ownerId: string, oldPath: string, newPath: string) {
 	const [fileTags, shares] = await Promise.all([
 		prisma.fileTag.findMany({ where: { ownerId } }),
@@ -143,6 +151,32 @@ export async function POST(request: Request) {
 	return NextResponse.json(response);
 }
 
+export async function PUT(request: Request) {
+	try {
+		const user = await getUser();
+		if (!user) {
+			return NextResponse.json(null, { status: 401 });
+		}
+
+		const body = await request.json();
+		const parentPath = cleanRelativePath(body.path);
+		const folderName = cleanFileName(body.name);
+		const { absolutePath: parentAbsolutePath } = resolveUserPath(user.rootDir, parentPath);
+		const { absolutePath: folderAbsolutePath } = resolveUserPath(user.rootDir, parentPath ? `${parentPath}/${folderName}` : folderName);
+
+		const parentInfo = await fs.stat(parentAbsolutePath);
+		if (!parentInfo.isDirectory()) {
+			return NextResponse.json({ error: 'Target path is not a folder' }, { status: 400 });
+		}
+
+		await fs.mkdir(folderAbsolutePath);
+
+		return NextResponse.json({ success: true });
+	} catch (error) {
+		return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not create folder' }, { status: 400 });
+	}
+}
+
 export async function PATCH(request: Request) {
 	try {
 		const user = await getUser();
@@ -152,11 +186,25 @@ export async function PATCH(request: Request) {
 
 		const body = await request.json();
 		const itemPath = cleanRelativePath(body.path, false);
-		const newName = cleanFileName(body.name);
 		const { absolutePath } = resolveUserPath(user.rootDir, itemPath);
-		const parentPath = path.dirname(itemPath);
-		const nextPath = parentPath === '.' ? newName : `${parentPath}/${newName}`;
+		const isMove = body.destinationPath != null;
+		const destinationPath = isMove ? cleanRelativePath(body.destinationPath) : null;
+		const newName = isMove ? path.basename(itemPath) : cleanFileName(body.name);
+		const parentPath = isMove ? destinationPath : path.dirname(itemPath);
+		const nextPath = parentPath && parentPath !== '.' ? `${parentPath}/${newName}` : newName;
 		const { absolutePath: nextAbsolutePath } = resolveUserPath(user.rootDir, nextPath);
+
+		if (isMove) {
+			const destination = resolveUserPath(user.rootDir, destinationPath ?? '');
+			const destinationInfo = await fs.stat(destination.absolutePath);
+			if (!destinationInfo.isDirectory()) {
+				throw new Error('Destination must be a folder');
+			}
+
+			if (filePathIsSameOrChild(destinationPath ?? '', itemPath)) {
+				throw new Error('A folder cannot be moved into itself');
+			}
+		}
 
 		await fs.access(absolutePath);
 		await fs.access(nextAbsolutePath).then(() => {
@@ -171,7 +219,7 @@ export async function PATCH(request: Request) {
 
 		return NextResponse.json({ success: true, path: nextPath });
 	} catch (error) {
-		return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not rename item' }, { status: 400 });
+		return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not update item' }, { status: 400 });
 	}
 }
 
