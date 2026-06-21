@@ -100,50 +100,73 @@ Then update `docker-compose.yml` to use that image name.
 
 ## Lokal Apps developer preview
 
-Lokal can also act as a small app-private data store for external self-hosted apps. This is intentionally not an app store or server runtime: apps run elsewhere, then use Lokal for authentication-adjacent, per-user JSON data storage.
+Lokal can also act as a small app-private JSON data store for external self-hosted apps. This is intentionally not an app store or server runtime: apps run elsewhere, then use Lokal for user-bound API tokens and per-user data storage.
 
-### Register an app
+### Define an app manifest in the external app
 
-1. Open **Settings → Apps** as an owner or admin.
-2. Paste an app manifest and click **Register / update app**.
-3. Create a token and copy it immediately. Lokal stores only the token hash.
+External apps keep their schemas and TypeScript completions in their own code. At login time the app sends the same serializable shape to Lokal:
 
-Example manifest:
+```ts
+export const lokalManifest = defineLokalApp({
+  slug: 'recipe-box',
+  collections: {
+    recipes: recipeSchema,
+    settings: settingsSchema,
+  },
+});
+```
+
+Collection names become app-private namespaces. Two apps can both use a `recipes` collection without seeing each other's records.
+
+### Authenticate and register the app
+
+When a member, admin, or owner signs in successfully through the platform auth endpoint, Lokal commits the manifest and returns a user-bound app token. No owner/admin pre-registration is required.
+
+```sh
+curl -X POST "https://files.example.com/api/platform/auth" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"user@example.com",
+    "password":"correct horse battery staple",
+    "manifest":{
+      "slug":"recipe-box",
+      "collections":{
+        "recipes":{"title":"string","body":"string","tags":["string"]},
+        "settings":{"theme":"string"}
+      }
+    }
+  }'
+```
+
+The response contains `token.rawToken`. Store it in the external app and send it as a bearer token for data calls:
 
 ```json
 {
-  "name": "Recipe Box",
-  "slug": "recipe-box",
-  "description": "Stores private recipe data in Lokal.",
-  "developerName": "Example Dev",
-  "datasets": [
-    {
-      "name": "recipes",
-      "kind": "collection",
-      "schema": { "title": "string", "body": "string", "tags": ["string"] }
-    },
-    {
-      "name": "settings",
-      "kind": "singleton",
-      "schema": { "theme": "string" }
-    }
-  ]
+  "apiBase": "https://files.example.com/api/platform",
+  "app": { "slug": "recipe-box" },
+  "token": {
+    "type": "Bearer",
+    "rawToken": "lokal_app_...",
+    "scopes": ["data:read", "data:write"]
+  }
 }
 ```
 
+Owners/admins can still view registered apps and active tokens in **Settings → Apps**. That list will move to a dedicated app page later.
+
 ### API discovery
 
-External apps can read this endpoint to find the instance API base:
+External apps can read this endpoint to find the instance API base and supported features:
 
 ```sh
 curl https://files.example.com/.well-known/lokal
 ```
 
-### Collection dataset API
+### Collection records API
 
 ```sh
 TOKEN="lokal_app_..."
-BASE="https://files.example.com/api/platform/apps/recipe-box/datasets/recipes"
+BASE="https://files.example.com/api/platform/apps/recipe-box/collections/recipes"
 
 curl -H "Authorization: Bearer $TOKEN" "$BASE/records"
 
@@ -155,11 +178,13 @@ curl -X POST "$BASE/records" \
 
 Records can be read, updated, and soft-deleted at `/records/:recordId` with `GET`, `PATCH`, and `DELETE`.
 
-### Singleton dataset API
+### Singleton value API
+
+Use `/value` when an app wants one value for a collection, such as settings or preferences:
 
 ```sh
 TOKEN="lokal_app_..."
-BASE="https://files.example.com/api/platform/apps/recipe-box/datasets/settings"
+BASE="https://files.example.com/api/platform/apps/recipe-box/collections/settings"
 
 curl -X PUT "$BASE/value" \
   -H "Authorization: Bearer $TOKEN" \
@@ -171,7 +196,7 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE/value"
 
 ### Current limitations
 
-- Only owners/admins can register apps and create app tokens.
-- Tokens are bound to the Lokal user who creates them, so data is private to that user and app.
-- App manifests are descriptive; Lokal stores the schema but does not enforce validation yet.
+- App authentication uses Lokal user email/password directly for now; a consent/OAuth-style flow can be added later.
+- Tokens are bound to the Lokal user who authenticates, so data is private to that user and app.
+- Lokal stores the submitted manifest for visibility but still treats record values as opaque JSON.
 - Files are intentionally not exposed through the app API yet.

@@ -118,6 +118,11 @@ export const FileView = () => {
 			.then((sharesResponse) => setShares(sharesResponse ?? []));
 	}, []);
 
+	const refreshTagAndShareData = useCallback(() => {
+		fetchTags();
+		fetchShares();
+	}, [fetchShares, fetchTags]);
+
 	const refreshRowData = useCallback(() => {
 		refreshTagData();
 		fetchShares();
@@ -322,8 +327,9 @@ export const FileView = () => {
 								tags={tags}
 								assignedTags={getTagsForFile(file)}
 								activeShares={getSharesForFile(file)}
-								onTagsChange={refreshRowData}
+								onTagsChange={refreshTagAndShareData}
 								onSharesChange={fetchShares}
+								onItemChange={refreshRowData}
 								onNavigate={onItemClick}
 							/>
 						}) : null}

@@ -1,17 +1,26 @@
 import { randomBytes, timingSafeEqual } from 'crypto';
 import { SHA256 } from 'crypto-js';
+import { NextResponse } from 'next/server';
+import type { NextResponse as NextResponseType } from 'next/server';
 import prisma from './prisma';
 
-export type AppManifest = {
+export type AppRegistrationInput = {
   name: string;
   slug: string;
   description?: string;
   developerName?: string;
-  datasets: Array<{
-    name: string;
-    kind: 'collection' | 'singleton';
-    schema?: unknown;
-  }>;
+};
+
+export type LokalAppManifest = {
+  name?: string;
+  slug: string;
+  description?: string;
+  developerName?: string;
+  collections: Record<string, unknown>;
+};
+
+export type ValidatedAppManifest = AppRegistrationInput & {
+  manifest: LokalAppManifest;
 };
 
 export function hashToken(token: string) {
@@ -26,48 +35,126 @@ export function createClientId() {
   return `lokal_client_${randomBytes(12).toString('base64url')}`;
 }
 
-export function validateManifest(input: unknown): AppManifest {
-  const manifest = input as Partial<AppManifest>;
+function titleFromSlug(slug: string) {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
 
-  if (!manifest || typeof manifest !== 'object') {
-    throw new Error('Manifest must be an object');
+export function validateAppRegistration(input: unknown): AppRegistrationInput {
+  const app = input as Partial<AppRegistrationInput>;
+
+  if (!app || typeof app !== 'object') {
+    throw new Error('App registration must be an object');
   }
 
-  if (!manifest.name?.trim()) {
-    throw new Error('Manifest name is required');
+  if (!app.name?.trim()) {
+    throw new Error('App name is required');
+  }
+
+  if (!app.slug?.match(/^[a-z0-9-]+$/)) {
+    throw new Error('App slug must use lowercase letters, numbers, and dashes');
+  }
+
+  return {
+    name: app.name.trim(),
+    slug: app.slug.trim(),
+    description: app.description?.trim() || undefined,
+    developerName: app.developerName?.trim() || undefined,
+  };
+}
+
+export function validateCollectionName(input: string) {
+  const collection = input?.trim();
+
+  if (!collection?.match(/^[a-zA-Z0-9_-]+$/)) {
+    throw new Error('Collection names may only use letters, numbers, underscores, and dashes');
+  }
+
+  return collection;
+}
+
+export function validateLokalAppManifest(input: unknown): ValidatedAppManifest {
+  const manifest = input as Partial<LokalAppManifest>;
+
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error('App manifest must be an object');
   }
 
   if (!manifest.slug?.match(/^[a-z0-9-]+$/)) {
-    throw new Error('Manifest slug must use lowercase letters, numbers, and dashes');
+    throw new Error('App manifest slug must use lowercase letters, numbers, and dashes');
   }
 
-  if (!Array.isArray(manifest.datasets) || manifest.datasets.length === 0) {
-    throw new Error('Manifest must define at least one dataset');
+  if (!manifest.collections || typeof manifest.collections !== 'object' || Array.isArray(manifest.collections)) {
+    throw new Error('App manifest must define collections');
   }
 
-  const datasets = manifest.datasets.map((dataset) => {
-    if (!dataset.name?.match(/^[a-zA-Z0-9_-]+$/)) {
-      throw new Error('Dataset names may only use letters, numbers, underscores, and dashes');
-    }
+  const collections = Object.fromEntries(
+    Object.entries(manifest.collections).map(([name, schema]) => [validateCollectionName(name), schema]),
+  );
 
-    if (dataset.kind !== 'collection' && dataset.kind !== 'singleton') {
-      throw new Error('Dataset kind must be collection or singleton');
-    }
+  if (Object.keys(collections).length === 0) {
+    throw new Error('App manifest must define at least one collection');
+  }
 
-    return {
-      name: dataset.name,
-      kind: dataset.kind,
-      schema: dataset.schema ?? {},
-    };
-  });
+  const name = manifest.name?.trim() || titleFromSlug(manifest.slug);
 
   return {
-    name: manifest.name.trim(),
-    slug: manifest.slug,
+    name,
+    slug: manifest.slug.trim(),
     description: manifest.description?.trim() || undefined,
     developerName: manifest.developerName?.trim() || undefined,
-    datasets,
+    manifest: {
+      ...manifest,
+      name: manifest.name?.trim() || undefined,
+      slug: manifest.slug.trim(),
+      description: manifest.description?.trim() || undefined,
+      developerName: manifest.developerName?.trim() || undefined,
+      collections,
+    },
   };
+}
+
+export async function registerAppManifestForUser(userId: string, input: unknown) {
+  const app = validateLokalAppManifest(input);
+
+  return prisma.app.upsert({
+    where: { slug: app.slug },
+    update: {
+      name: app.name,
+      description: app.description,
+      developerName: app.developerName,
+      manifest: app.manifest as any,
+      enabled: true,
+    },
+    create: {
+      name: app.name,
+      slug: app.slug,
+      description: app.description,
+      developerName: app.developerName,
+      manifest: app.manifest as any,
+      clientId: createClientId(),
+      createdById: userId,
+    },
+  });
+}
+
+export function withPlatformCors<T extends NextResponseType>(response: T) {
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept');
+  response.headers.set('Access-Control-Max-Age', '86400');
+  return response;
+}
+
+export function platformJson(body: unknown, init?: ResponseInit) {
+  return withPlatformCors(NextResponse.json(body, init));
+}
+
+export function platformOptions() {
+  return withPlatformCors(new NextResponse(null, { status: 204 }));
 }
 
 export async function getPlatformToken(request: Request, appSlug: string, requiredScope: 'data:read' | 'data:write') {
@@ -106,15 +193,6 @@ export async function getPlatformToken(request: Request, appSlug: string, requir
   }
 
   return token;
-}
-
-export async function getPlatformDataset(appId: string, datasetName: string) {
-  return prisma.appDataset.findFirst({
-    where: {
-      appId,
-      name: datasetName,
-    },
-  });
 }
 
 export function getRecordValue(body: any) {

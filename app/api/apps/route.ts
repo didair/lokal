@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/user';
-import { createClientId, validateManifest } from '@/lib/platform';
+import { createClientId, registerAppManifestForUser, validateAppRegistration, validateLokalAppManifest } from '@/lib/platform';
 
 async function getAdminUserId() {
   const session = await getCurrentSession();
@@ -14,6 +14,21 @@ async function getAdminUserId() {
   return user.id as string;
 }
 
+const appInclude = {
+  tokens: {
+    where: { revokedAt: null },
+    select: {
+      id: true,
+      name: true,
+      scopes: true,
+      expiresAt: true,
+      createdAt: true,
+      user: { select: { name: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' as const },
+  },
+};
+
 export async function GET() {
   const userId = await getAdminUserId();
 
@@ -22,21 +37,7 @@ export async function GET() {
   }
 
   const apps = await prisma.app.findMany({
-    include: {
-      datasets: { orderBy: { name: 'asc' } },
-      tokens: {
-        where: { revokedAt: null },
-        select: {
-          id: true,
-          name: true,
-          scopes: true,
-          expiresAt: true,
-          createdAt: true,
-          user: { select: { name: true, email: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
+    include: appInclude,
     orderBy: { createdAt: 'desc' },
   });
 
@@ -52,61 +53,40 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const manifest = validateManifest(body.manifest ?? body);
+    const payload = body.manifest ?? body.app ?? body;
+    const hasManifest = Boolean(payload?.collections);
 
-    const app = await prisma.app.upsert({
-      where: { slug: manifest.slug },
-      update: {
-        name: manifest.name,
-        description: manifest.description,
-        developerName: manifest.developerName,
-        enabled: true,
-      },
-      create: {
-        name: manifest.name,
-        slug: manifest.slug,
-        description: manifest.description,
-        developerName: manifest.developerName,
-        clientId: createClientId(),
-        createdById: userId,
-      },
-    });
+    if (hasManifest) {
+      await registerAppManifestForUser(userId, payload);
+    } else {
+      const registration = validateAppRegistration(payload);
 
-    await prisma.$transaction(manifest.datasets.map((dataset) => prisma.appDataset.upsert({
-      where: { appId_name: { appId: app.id, name: dataset.name } },
-      update: {
-        kind: dataset.kind,
-        schema: dataset.schema as any,
-      },
-      create: {
-        appId: app.id,
-        name: dataset.name,
-        kind: dataset.kind,
-        schema: dataset.schema as any,
-      },
-    })));
-
-    const updatedApp = await prisma.app.findUnique({
-      where: { id: app.id },
-      include: {
-        datasets: { orderBy: { name: 'asc' } },
-        tokens: {
-          where: { revokedAt: null },
-          select: {
-            id: true,
-            name: true,
-            scopes: true,
-            expiresAt: true,
-            createdAt: true,
-            user: { select: { name: true, email: true } },
-          },
-          orderBy: { createdAt: 'desc' },
+      await prisma.app.upsert({
+        where: { slug: registration.slug },
+        update: {
+          name: registration.name,
+          description: registration.description,
+          developerName: registration.developerName,
+          enabled: true,
         },
-      },
+        create: {
+          name: registration.name,
+          slug: registration.slug,
+          description: registration.description,
+          developerName: registration.developerName,
+          clientId: createClientId(),
+          createdById: userId,
+        },
+      });
+    }
+
+    const app = await prisma.app.findUnique({
+      where: { slug: hasManifest ? validateLokalAppManifest(payload).slug : validateAppRegistration(payload).slug },
+      include: appInclude,
     });
 
-    return NextResponse.json(updatedApp);
+    return NextResponse.json(app);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid manifest' }, { status: 400 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid app registration' }, { status: 400 });
   }
 }

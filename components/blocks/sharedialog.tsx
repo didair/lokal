@@ -201,7 +201,7 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent data-lokal-floating-ui>
         <DialogHeader>
           <DialogTitle>Share {item.name}</DialogTitle>
           <DialogDescription>
@@ -288,7 +288,7 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
                 <SelectTrigger>
                   <SelectValue placeholder="Select a user" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent data-lokal-floating-ui>
                   {users.map((user) => (
                     <SelectItem value={user.id} key={user.id}>
                       {user.name} ({user.email})
@@ -308,7 +308,7 @@ export function ShareDialog({ open, onOpenChange, existingShares = [], onSharesC
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent data-lokal-floating-ui>
                 <SelectItem value="after-read">After read</SelectItem>
                 <SelectItem value="24h">24 hours</SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>

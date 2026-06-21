@@ -8,8 +8,8 @@ export function GET(request: Request) {
     issuer: origin,
     apiBase: `${origin}/api/platform`,
     features: {
-      auth: ['user-bound-app-token'],
-      datasets: ['collection', 'singleton'],
+      auth: ['password-app-token', 'user-bound-app-token'],
+      data: ['dynamic-collections', 'records', 'singleton-values'],
       files: false,
     },
   });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, TagIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -56,7 +55,6 @@ export const TagSelector = ({
   triggerIcon?: "plus" | "tag";
   triggerClassName?: string;
 }) => {
-  const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState("#2563eb");
@@ -65,7 +63,6 @@ export const TagSelector = ({
 
   const refreshTags = () => {
     onChange();
-    router.refresh();
   };
 
   const toggleTag = async (tag: Tag) => {
@@ -138,7 +135,7 @@ export const TagSelector = ({
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent align="start" className="w-56" data-lokal-floating-ui>
           {tags.length === 0 ? (
             <DropdownMenuItem disabled>No tags yet</DropdownMenuItem>
           ) : (
@@ -162,7 +159,7 @@ export const TagSelector = ({
       </DropdownMenu>
 
       <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent>
+        <DialogContent data-lokal-floating-ui>
           <DialogHeader>
             <DialogTitle>Create tag</DialogTitle>
             <DialogDescription>Choose a name and color for this tag.</DialogDescription>

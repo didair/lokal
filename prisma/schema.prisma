@@ -92,29 +92,15 @@ model App {
   slug          String       @unique
   description   String?
   developerName String?
+  manifest      Json?
   clientId      String       @unique
   enabled       Boolean      @default(true)
   createdById   String
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   createdBy     User         @relation("CreatedApps", fields: [createdById], references: [id], onDelete: Cascade)
-  datasets      AppDataset[]
   tokens        AppToken[]
   records       DataRecord[]
-}
-
-model AppDataset {
-  id        String       @id @default(cuid())
-  appId     String
-  name      String
-  kind      String
-  schema    Json
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  app       App          @relation(fields: [appId], references: [id], onDelete: Cascade)
-  records   DataRecord[]
-
-  @@unique([appId, name])
 }
 
 model AppToken {
@@ -132,20 +118,19 @@ model AppToken {
 }
 
 model DataRecord {
-  id        String     @id @default(cuid())
-  appId     String
-  datasetId String
-  ownerId   String
-  key       String?
-  value     Json
-  version   Int        @default(1)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  deletedAt DateTime?
-  app       App        @relation(fields: [appId], references: [id], onDelete: Cascade)
-  dataset   AppDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
-  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  appId      String
+  ownerId    String
+  collection String
+  key        String?
+  value      Json
+  version    Int       @default(1)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  app        App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  @@unique([appId, datasetId, ownerId, key])
-  @@index([appId, datasetId, ownerId])
+  @@unique([appId, ownerId, collection, key])
+  @@index([appId, ownerId, collection])
 }

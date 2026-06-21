@@ -33,6 +33,7 @@ export const ItemTableRow = ({
 	onNavigate = () => null,
 	onTagsChange = () => null,
 	onSharesChange = () => null,
+	onItemChange = () => null,
 }: {
 	file: File,
 	currentPath: string,
@@ -49,6 +50,7 @@ export const ItemTableRow = ({
 	onNavigate?: (file: File) => void,
 	onTagsChange?: () => void,
 	onSharesChange?: () => void,
+	onItemChange?: () => void,
 }) => {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -75,9 +77,29 @@ export const ItemTableRow = ({
 		setRenameValue(file.name);
 	}, [file.name]);
 
-	const refreshData = () => {
+	const refreshTagAndShareData = () => {
 		onTagsChange();
 		onSharesChange();
+	};
+
+	const refreshItemData = () => {
+		onItemChange();
+		onSharesChange();
+	};
+
+	const keepPreviewOpenForFloatingUi = (event: Event) => {
+		const target = event.target as HTMLElement | null;
+		if (shareOpen || target?.closest('[data-lokal-floating-ui]')) {
+			event.preventDefault();
+		}
+	};
+
+	const updatePreviewOpen = (open: boolean) => {
+		if (!open && shareOpen) {
+			return;
+		}
+
+		setPreviewOpen(open);
 	};
 
 	useEffect(() => {
@@ -119,7 +141,7 @@ export const ItemTableRow = ({
 		}
 
 		setRenameOpen(false);
-		refreshData();
+		refreshItemData();
 	};
 
 	const moveItem = async (event: FormEvent<HTMLFormElement>) => {
@@ -143,7 +165,7 @@ export const ItemTableRow = ({
 		}
 
 		setMoveOpen(false);
-		refreshData();
+		refreshItemData();
 	};
 
 	const deleteItem = async () => {
@@ -164,7 +186,7 @@ export const ItemTableRow = ({
 		}
 
 		setDeleteOpen(false);
-		refreshData();
+		refreshItemData();
 	};
 
 	const hasMobileActions = actions !== 'none';
@@ -368,8 +390,13 @@ export const ItemTableRow = ({
 			onSharesChange={onSharesChange}
 		/>
 
-		<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-			<DialogContent className="max-h-[90dvh] max-w-5xl overflow-hidden p-0">
+		<Dialog open={previewOpen} onOpenChange={updatePreviewOpen}>
+			<DialogContent
+				className="max-h-[90dvh] max-w-5xl overflow-hidden p-0"
+				onInteractOutside={keepPreviewOpenForFloatingUi}
+				onPointerDownOutside={keepPreviewOpenForFloatingUi}
+				onFocusOutside={keepPreviewOpenForFloatingUi}
+			>
 				<div className="flex max-h-[90dvh] min-h-[70dvh] flex-col">
 					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-12">
 						<DialogTitle className="flex items-center gap-2 truncate">
@@ -390,8 +417,12 @@ export const ItemTableRow = ({
 							) : null}
 
 							{fileDetails?.previewType === 'image' ? (
-								<div className="flex min-h-64 items-center justify-center">
-									<img src={fileDetails.rawUrl} alt={file.name} className="max-h-[62dvh] max-w-full rounded-xl object-contain shadow-sm" />
+								<div className="flex h-[62dvh] min-h-64 w-full items-center justify-center">
+									<img
+										src={fileDetails.rawUrl}
+										alt={file.name}
+										className="h-full w-full max-w-4xl rounded-xl object-contain shadow-sm"
+									/>
 								</div>
 							) : null}
 
@@ -412,7 +443,7 @@ export const ItemTableRow = ({
 									<FileIcon className="h-10 w-10 text-zinc-300" />
 									<span>No preview available for this file type.</span>
 									<Button asChild variant="outline">
-										<a href={`/file/u?path=${encodeURIComponent(itemPath)}`}>Download file</a>
+										<a href={`/file/u?path=${encodeURIComponent(itemPath)}`} target="_blank" rel="noreferrer">Download file</a>
 									</Button>
 								</div>
 							) : null}
@@ -438,19 +469,19 @@ export const ItemTableRow = ({
 						) : null}
 					</div>
 
-					<DialogFooter className="gap-3 border-t border-zinc-200/80 px-5 py-3 sm:items-center sm:justify-between">
+					<DialogFooter className="gap-3 border-t border-zinc-200/80 px-5 py-3 sm:items-center sm:justify-between" onClick={(event) => event.stopPropagation()}>
 						<div className="flex min-w-0 flex-1 items-center gap-2" onClick={(event) => event.stopPropagation()}>
 							<span className="text-xs font-medium uppercase tracking-[0.08em] text-zinc-400">Tags</span>
 							<TagSelector
 								path={itemPath}
 								tags={tags}
 								assignedTags={assignedTags}
-								onChange={refreshData}
+								onChange={refreshTagAndShareData}
 							/>
 						</div>
 						<div className="flex gap-2">
 							<Button type="button" variant="outline" asChild>
-								<a href={`/file/u?path=${encodeURIComponent(itemPath)}`}>
+								<a href={`/file/u?path=${encodeURIComponent(itemPath)}`} target="_blank" rel="noreferrer">
 									<Download className="mr-2 h-4 w-4" />
 									Download
 								</a>
