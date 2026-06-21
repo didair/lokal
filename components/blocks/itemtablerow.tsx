@@ -234,7 +234,7 @@ export const ItemTableRow = ({
 										</div>
 									</div>
 
-									<div className="flex shrink-0 items-center gap-1 md:hidden" onClick={(event) => event.stopPropagation()}>
+									<div className="mt-2 flex shrink-0 items-center gap-1 md:mt-0 md:hidden" onClick={(event) => event.stopPropagation()}>
 										{!secondaryCell ? (
 											<TagSelector
 												path={itemPath}
@@ -371,26 +371,12 @@ export const ItemTableRow = ({
 		<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
 			<DialogContent className="max-h-[90dvh] max-w-5xl overflow-hidden p-0">
 				<div className="flex max-h-[90dvh] min-h-[70dvh] flex-col">
-					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-28">
-						<div className="flex min-w-0 items-start justify-between gap-4">
-							<div className="min-w-0">
-								<DialogTitle className="flex items-center gap-2 truncate">
-									<FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-									<span className="truncate">{file.name}</span>
-								</DialogTitle>
-								<DialogDescription className="truncate">/{itemPath.replace(/^\/+/, '')}</DialogDescription>
-							</div>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="absolute right-12 top-3.5"
-								onClick={() => setMetadataOpen((value) => !value)}
-							>
-								<PanelRightOpen className="mr-2 h-4 w-4" />
-								{metadataOpen ? 'Hide details' : 'Details'}
-							</Button>
-						</div>
+					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-12">
+						<DialogTitle className="flex items-center gap-2 truncate">
+							<FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+							<span className="truncate">{file.name}</span>
+						</DialogTitle>
+						<DialogDescription className="truncate">/{itemPath.replace(/^\/+/, '')}</DialogDescription>
 					</DialogHeader>
 
 					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,1fr)_auto]">
@@ -452,7 +438,7 @@ export const ItemTableRow = ({
 						) : null}
 					</div>
 
-					<DialogFooter className="border-t border-zinc-200/80 px-5 py-3 sm:items-center sm:justify-between">
+					<DialogFooter className="gap-3 border-t border-zinc-200/80 px-5 py-3 sm:items-center sm:justify-between">
 						<div className="flex min-w-0 flex-1 items-center gap-2" onClick={(event) => event.stopPropagation()}>
 							<span className="text-xs font-medium uppercase tracking-[0.08em] text-zinc-400">Tags</span>
 							<TagSelector
@@ -466,6 +452,10 @@ export const ItemTableRow = ({
 							<Button type="button" onClick={() => setShareOpen(true)}>
 								<Share2 className="mr-2 h-4 w-4" />
 								Share
+							</Button>
+							<Button type="button" variant="outline" onClick={() => setMetadataOpen((value) => !value)}>
+								<PanelRightOpen className="mr-2 h-4 w-4" />
+								{metadataOpen ? 'Hide details' : 'Details'}
 							</Button>
 						</div>
 					</DialogFooter>

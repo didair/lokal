@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CloudUpload, CopyPlus, FileUp, Upload, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -105,14 +105,6 @@ const FileUpload: React.FC = () => {
 	const activeUploads = uploadQueue.filter((task) => task.status === 'uploading');
 	const failedUploads = uploadQueue.filter((task) => task.status === 'error');
 	const completedUploads = uploadQueue.filter((task) => task.status === 'success');
-
-	const totalProgress = useMemo(() => {
-		if (activeUploads.length > 0) {
-			return activeUploads.reduce((sum, item) => sum + item.progress, 0) / activeUploads.length;
-		}
-
-		return uploadQueue.length > 0 && failedUploads.length === 0 ? 100 : 0;
-	}, [activeUploads, failedUploads.length, uploadQueue.length]);
 
 	const currentPathLabel = () => {
 		if (typeof window === 'undefined' || window.location.pathname !== '/files') {
