@@ -234,7 +234,7 @@ export const ItemTableRow = ({
 										</div>
 									</div>
 
-									<div className="mt-2 flex shrink-0 items-center gap-1 md:mt-0 md:hidden" onClick={(event) => event.stopPropagation()}>
+									<div className="flex shrink-0 items-center gap-1 md:hidden" onClick={(event) => event.stopPropagation()}>
 										{!secondaryCell ? (
 											<TagSelector
 												path={itemPath}
@@ -243,14 +243,14 @@ export const ItemTableRow = ({
 												onChange={onTagsChange}
 												mode="trigger"
 												triggerIcon="tag"
-												triggerClassName="h-7 w-7"
+												triggerClassName="!h-8 !w-8"
 											/>
 										) : null}
 
 										{hasMobileActions ? (
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
-													<Button variant="outline" size="icon" className="h-7 w-7 rounded-full" aria-label="Open file actions">
+													<Button variant="outline" size="icon" className="!h-8 !w-8 rounded-full" aria-label="Open file actions">
 														<MoreHorizontal className="h-3.5 w-3.5" />
 													</Button>
 												</DropdownMenuTrigger>

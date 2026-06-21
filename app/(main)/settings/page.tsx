@@ -6,12 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getServerSettings, getServerUsers, saveFileSettings, saveServerSettings } from "@/lib/actions";
+import { getCurrentUser, getServerSettings, getServerUsers, saveFileSettings, saveServerSettings } from "@/lib/actions";
 import { Pen } from "lucide-react";
 
 export default async function Settings() {
+	const currentUser = await getCurrentUser();
 	const settings = await getServerSettings();
 	const users = await getServerUsers();
+	const isRegularUser = currentUser.role === 'U';
 
 	return (
 		<>
@@ -31,10 +33,14 @@ export default async function Settings() {
 
 			<div className="flex flex-col gap-2">
 				<h1 className="text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">Settings</h1>
-				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-					Control server identity, invite users, and define which folders each account can access.
-				</p>
+				{!isRegularUser ? (
+					<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+						Control server identity, invite users, and define which folders each account can access.
+					</p>
+				) : null}
 			</div>
+
+			{isRegularUser ? null : (
 
 			<div className="space-y-10">
 				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -164,6 +170,7 @@ export default async function Settings() {
 					</Card>
 				</div>
 			</div>
+			)}
 		</>
 	);
 }
