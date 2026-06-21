@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetTrigger, SheetContent, SheetClose } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
 import { BellIcon, CircleUserIcon, SearchIcon, FileIcon, MenuIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
@@ -32,32 +32,38 @@ export const Header = async () => {
 							<span className="sr-only">{server_name}</span>
 						</Link>
 
-						<Link
-							href="/"
-							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
-							prefetch={false}
-						>
-							<HomeIcon className="h-5 w-5" />
-							Dashboard
-						</Link>
+						<SheetClose asChild>
+							<Link
+								href="/"
+								className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
+								prefetch={false}
+							>
+								<HomeIcon className="h-5 w-5" />
+								Dashboard
+							</Link>
+						</SheetClose>
 
-						<Link
-							href="/files"
-							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
-							prefetch={false}
-						>
-							<FileIcon className="h-5 w-5" />
-							Files
-						</Link>
+						<SheetClose asChild>
+							<Link
+								href="/files"
+								className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
+								prefetch={false}
+							>
+								<FileIcon className="h-5 w-5" />
+								Files
+							</Link>
+						</SheetClose>
 
-						<Link
-							href="/shared"
-							className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
-							prefetch={false}
-						>
-							<UsersIcon className="h-5 w-5" />
-							Shared with me
-						</Link>
+						<SheetClose asChild>
+							<Link
+								href="/shared"
+								className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-primary hover:text-foreground hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
+								prefetch={false}
+							>
+								<UsersIcon className="h-5 w-5" />
+								Shared with me
+							</Link>
+						</SheetClose>
 
 						<Link
 							href="#"
@@ -73,15 +79,16 @@ export const Header = async () => {
 						<div className="mx-[-0.65rem] px-3 text-lg font-medium text-muted-foreground">Tags</div>
 
 						{tags.map((tag) => (
-							<Link
-								key={tag.id}
-								href={`/files?tag=${tag.id}`}
-								className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-								prefetch={false}
-							>
-								<TagIcon className="h-5 w-5" style={{ color: tag.color }} />
-								{tag.name}
-							</Link>
+							<SheetClose asChild key={tag.id}>
+								<Link
+									href={`/files?tag=${tag.id}`}
+									className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+									prefetch={false}
+								>
+									<TagIcon className="h-5 w-5" style={{ color: tag.color }} />
+									{tag.name}
+								</Link>
+							</SheetClose>
 						))}
 					</nav>
 				</SheetContent>

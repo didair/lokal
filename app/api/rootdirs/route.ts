@@ -30,6 +30,7 @@ export async function GET() {
 	}
 
 	const root_dir = DATA_DIR;
-	const response = getFilesInDirectory(root_dir).filter((file) => file.type === 'dir');
+	const setting = await prisma.setting.findUnique({ where: { id: 'files-ignore-ds-store' } });
+	const response = getFilesInDirectory(root_dir, { ignoreDsStore: setting?.value === 'true' }).filter((file) => file.type === 'dir');
 	return NextResponse.json(response);
 };

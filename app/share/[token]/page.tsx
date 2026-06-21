@@ -75,7 +75,10 @@ export default async function SharePage({ params }: SharePageProps) {
     );
   }
 
-  const files = getFilesInDirectory(dataPath(share.ownerRootDir, share.path));
+  const ignoreDsStore = (await prisma.setting.findUnique({
+    where: { id: 'files-ignore-ds-store' },
+  }))?.value === 'true';
+  const files = getFilesInDirectory(dataPath(share.ownerRootDir, share.path), { ignoreDsStore });
 
   if (share.maxReads != null) {
     await prisma.share.update({

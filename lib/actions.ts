@@ -80,11 +80,29 @@ export async function saveServerSettings(formData: FormData) {
 	return;
 };
 
+export async function saveFileSettings(formData: FormData) {
+	const owner = await isUserOwner();
+	if (!owner) { return; }
+
+	await prisma.setting.upsert({
+		where: { id: 'files-ignore-ds-store' },
+		update: { value: formData.get('ignore-ds-store') === 'on' ? 'true' : 'false' },
+		create: {
+			id: 'files-ignore-ds-store',
+			value: formData.get('ignore-ds-store') === 'on' ? 'true' : 'false',
+		},
+	});
+
+	revalidatePath('/settings');
+	revalidatePath('/files');
+};
+
 export async function getServerSettings() {
 	const owner = await isUserOwner();
 
 	const response = {
 		serverName: '',
+		ignoreDsStore: false,
 	};
 
 	if (!owner) { return response; }
@@ -92,6 +110,10 @@ export async function getServerSettings() {
 	await prisma.setting.findUnique({
 		where: { id: 'server-name' },
 	}).then((setting) => response['serverName'] = setting?.value ?? '' );
+
+	await prisma.setting.findUnique({
+		where: { id: 'files-ignore-ds-store' },
+	}).then((setting) => response['ignoreDsStore'] = setting?.value === 'true' );
 
 	return response;
 };

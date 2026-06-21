@@ -2,7 +2,7 @@
 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { ItemTableRow } from "@/components/blocks/itemtablerow"
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { File } from "@/lib/file-utils";
 import Link from "next/link";
 import { FolderUp } from "lucide-react";
@@ -20,6 +20,8 @@ export const FileView = () => {
 	const [tags, setTags] = useState<Tag[]>([]);
 	const [fileTags, setFileTags] = useState<FileTag[]>([]);
 	const [shares, setShares] = useState<ShareSummary[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const requestIdRef = useRef(0);
 	const searchParams = useSearchParams();
 	const routePath = searchParams.get('path') ?? '/';
 	const selectedTagId = searchParams.get('tag');
@@ -28,6 +30,16 @@ export const FileView = () => {
 	const router = useRouter();
 
 	const fetchData = useCallback((path: string, tagId?: string | null) => {
+		const requestId = requestIdRef.current + 1;
+		requestIdRef.current = requestId;
+		setIsLoading(true);
+
+		const finishLoading = () => {
+			if (requestIdRef.current === requestId) {
+				setIsLoading(false);
+			}
+		};
+
 		if (tagId) {
 			fetch(`/api/file-tags?tagId=${encodeURIComponent(tagId)}`)
 				.then(async (response) => {
@@ -40,7 +52,8 @@ export const FileView = () => {
 							date: new Date(file.date),
 						};
 					}));
-				});
+				})
+				.finally(finishLoading);
 
 			return;
 		}
@@ -71,7 +84,8 @@ export const FileView = () => {
 						date: new Date(file.date),
 					};
 				}));
-			});
+			})
+			.finally(finishLoading);
 	}, []);
 
 	const fetchTags = useCallback(() => {
@@ -188,74 +202,93 @@ export const FileView = () => {
 	};
 
 	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>Name</TableHead>
-					<TableHead>Tags</TableHead>
-					<TableHead>Date</TableHead>
-					<TableHead>Size</TableHead>
-				</TableRow>
-			</TableHeader>
+		<div className="relative">
+			<div
+				aria-live="polite"
+				className={[
+					"pointer-events-none absolute inset-x-0 top-0 z-10 transition-opacity duration-200",
+					isLoading ? "opacity-100" : "opacity-0",
+				].join(' ')}
+			>
+				<div className="h-0.5 overflow-hidden bg-rose-100/80">
+					<div className="h-full w-1/3 animate-[lokal-working_1.25s_ease-in-out_infinite] rounded-full bg-rose-500/70" />
+				</div>
+				<div className="flex justify-end px-4 pt-2">
+					<span className="rounded-full border border-zinc-200/80 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-500 shadow-sm backdrop-blur">
+						Reading folder
+					</span>
+				</div>
+			</div>
 
-			<TableBody>
-				{parent != null && !selectedTagId ?
+			<Table>
+				<TableHeader>
 					<TableRow>
-						<TableCell style={{ height: 49 }}>
-							<div className="flex items-center gap-2">
-								<FolderUp className="h-4 w-4 text-muted-foreground" />
-
-								<Link href="#" onClick={goParent} className="font-medium">
-									..
-								</Link>
-							</div>
-						</TableCell>
-						<TableCell></TableCell>
-						<TableCell></TableCell>
-						<TableCell></TableCell>
+						<TableHead>Name</TableHead>
+						<TableHead className="hidden md:table-cell">Tags</TableHead>
+						<TableHead className="hidden md:table-cell">Date</TableHead>
+						<TableHead className="hidden md:table-cell">Size</TableHead>
 					</TableRow>
+				</TableHeader>
+
+				<TableBody>
+					{parent != null && !selectedTagId ?
+						<TableRow>
+							<TableCell style={{ height: 49 }}>
+								<div className="flex items-center gap-2">
+									<FolderUp className="h-4 w-4 text-muted-foreground" />
+
+									<Link href="#" onClick={goParent} className="font-medium">
+										..
+									</Link>
+								</div>
+							</TableCell>
+							<TableCell className="hidden md:table-cell"></TableCell>
+							<TableCell className="hidden md:table-cell"></TableCell>
+							<TableCell className="hidden md:table-cell"></TableCell>
+						</TableRow>
+						: null}
+
+					{selectedTagId && files.length === 0 ?
+						<TableRow>
+							<TableCell colSpan={4} className="text-muted-foreground">
+								<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
+									<span className="text-sm font-semibold text-zinc-700">No files or folders have this tag yet.</span>
+									<span className="max-w-sm text-xs leading-5 text-muted-foreground">Add this tag from the file table to make matching items appear here.</span>
+								</div>
+							</TableCell>
+						</TableRow>
 					: null}
 
-				{selectedTagId && files.length === 0 ?
-					<TableRow>
-						<TableCell colSpan={4} className="text-muted-foreground">
-							<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
-								<span className="text-sm font-semibold text-zinc-700">No files or folders have this tag yet.</span>
-								<span className="max-w-sm text-xs leading-5 text-muted-foreground">Add this tag from the file table to make matching items appear here.</span>
-							</div>
-						</TableCell>
-					</TableRow>
-				: null}
+					{!selectedTagId && files.length === 0 ?
+						<TableRow>
+							<TableCell colSpan={4} className="text-muted-foreground">
+								<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
+									<span className="text-sm font-semibold text-zinc-700">This directory is empty.</span>
+									<span className="max-w-sm text-xs leading-5 text-muted-foreground">Drop files anywhere on the app to upload them into the current directory.</span>
+								</div>
+							</TableCell>
+						</TableRow>
+					: null}
 
-				{!selectedTagId && files.length === 0 ?
-					<TableRow>
-						<TableCell colSpan={4} className="text-muted-foreground">
-							<div className="flex min-h-32 flex-col items-center justify-center gap-2 text-center">
-								<span className="text-sm font-semibold text-zinc-700">This directory is empty.</span>
-								<span className="max-w-sm text-xs leading-5 text-muted-foreground">Drop files anywhere on the app to upload them into the current directory.</span>
-							</div>
-						</TableCell>
-					</TableRow>
-				: null}
-
-				{[...files]
-					.sort((file) => file.type == 'dir' ? -1 : 1)
-					.map((file, index) => {
-						return <ItemTableRow
-							file={file}
-							key={index}
-							currentPath={getItemParentPath(file)}
-							itemPath={getItemPath(file)}
-							showPath={selectedTagId != null}
-							tags={tags}
-							assignedTags={getTagsForFile(file)}
-							activeShares={getSharesForFile(file)}
-							onTagsChange={refreshRowData}
-							onSharesChange={fetchShares}
-							onNavigate={onItemClick}
-						/>
-					})}
-			</TableBody>
-		</Table>
+					{[...files]
+						.sort((file) => file.type == 'dir' ? -1 : 1)
+						.map((file, index) => {
+							return <ItemTableRow
+								file={file}
+								key={index}
+								currentPath={getItemParentPath(file)}
+								itemPath={getItemPath(file)}
+								showPath={selectedTagId != null}
+								tags={tags}
+								assignedTags={getTagsForFile(file)}
+								activeShares={getSharesForFile(file)}
+								onTagsChange={refreshRowData}
+								onSharesChange={fetchShares}
+								onNavigate={onItemClick}
+							/>
+						})}
+				</TableBody>
+			</Table>
+		</div>
 	);
 }

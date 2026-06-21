@@ -49,8 +49,15 @@ export async function GET(request: Request) {
       include: { tag: true },
       orderBy: { createdAt: 'asc' },
     });
+    const ignoreDsStore = (await prisma.setting.findUnique({
+      where: { id: 'files-ignore-ds-store' },
+    }))?.value === 'true';
 
     const files = taggedFiles.flatMap((fileTag) => {
+      if (ignoreDsStore && fileTag.path.split('/').pop() === '.DS_Store') {
+        return [];
+      }
+
       const fullPath = dataPath(user.rootDir, fileTag.path);
 
       if (!fs.existsSync(fullPath)) {

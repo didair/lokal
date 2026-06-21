@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getServerSettings, getServerUsers, saveServerSettings } from "@/lib/actions";
+import { getServerSettings, getServerUsers, saveFileSettings, saveServerSettings } from "@/lib/actions";
 import { Pen } from "lucide-react";
 
 export default async function Settings() {
@@ -116,6 +116,38 @@ export default async function Settings() {
 							</TableBody>
 						</Table>
 
+					</Card>
+				</div>
+
+				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+					<div>
+						<h2 className="text-base font-semibold tracking-tight md:text-lg">Files</h2>
+						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+							Control how files are displayed across Lokal. (Only visible for owner)
+						</p>
+					</div>
+
+					<Card className="col-span-2 p-6">
+						<form className="grid gap-5" action={saveFileSettings}>
+							<label className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white/60 p-4">
+								<input
+									type="checkbox"
+									name="ignore-ds-store"
+									defaultChecked={settings.ignoreDsStore}
+									className="mt-1 h-4 w-4 rounded border-zinc-300 accent-zinc-950"
+								/>
+								<span>
+									<span className="block text-sm font-medium text-zinc-950">Hide .DS_Store files</span>
+									<span className="mt-1 block text-sm leading-6 text-muted-foreground">
+										When enabled, .DS_Store files are never shown in directory listings.
+									</span>
+								</span>
+							</label>
+
+							<div className="flex">
+								<Button className="ml-auto">Save file settings</Button>
+							</div>
+						</form>
 					</Card>
 				</div>
 

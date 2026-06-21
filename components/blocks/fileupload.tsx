@@ -300,6 +300,11 @@ const FileUpload: React.FC = () => {
 							</Button>
 						</div>
 
+						{uploadQueue.length > 0 ? (
+							<div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+								<div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${Math.ceil(totalProgress)}%` }} />
+							</div>
+						) : null}
 					</div>
 
 					{uploadQueue.length === 0 ? (

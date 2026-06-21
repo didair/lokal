@@ -87,3 +87,13 @@
     @apply bg-rose-100 text-rose-950;
   }
 }
+
+@keyframes lokal-working {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(320%);
+  }
+}

@@ -1,10 +1,9 @@
-import Link from 'next/link';
-import { FileIcon, FolderIcon, UsersIcon } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getSharedWithMe } from '@/lib/actions';
-import { formatDate } from '@/lib/utils';
+import { ItemTableRow } from '@/components/blocks/itemtablerow';
 
 export default async function SharedWithMePage() {
   const shares = await getSharedWithMe();
@@ -27,9 +26,6 @@ export default async function SharedWithMePage() {
 
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">Shared with me</h1>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Files and folders other Lokal users have shared privately with you.
-        </p>
       </div>
 
       <Card className="overflow-hidden">
@@ -37,14 +33,15 @@ export default async function SharedWithMePage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Shared by</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="hidden md:table-cell">Shared by</TableHead>
+              <TableHead className="hidden md:table-cell">Created</TableHead>
+              <TableHead className="hidden md:table-cell">Size</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shares.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableCell colSpan={4} className="text-muted-foreground">
                   <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
                     <UsersIcon className="h-8 w-8 text-rose-500" />
                     <span className="text-sm font-semibold text-zinc-700">Nothing has been shared with you yet.</span>
@@ -54,20 +51,20 @@ export default async function SharedWithMePage() {
               </TableRow>
             ) : null}
             {shares.map((share) => (
-              <TableRow key={share.id} className="h-14">
-                <TableCell>
-                  <Link href={`/share/${share.token}`} className="flex items-center gap-2 font-medium">
-                    {share.fileType === 'dir' ? (
-                      <FolderIcon className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <FileIcon className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    {share.name}
-                  </Link>
-                </TableCell>
-                <TableCell>{share.owner.name}</TableCell>
-                <TableCell>{formatDate(share.createdAt)}</TableCell>
-              </TableRow>
+              <ItemTableRow
+                key={share.id}
+                file={{
+                  name: share.name,
+                  type: share.fileType === 'dir' ? 'dir' : 'file',
+                  date: share.createdAt,
+                  size: '-',
+                }}
+                currentPath="/"
+                itemPath={share.path}
+                secondaryCell={share.owner.name}
+                href={`/share/${share.token}`}
+                actions="shared"
+              />
             ))}
           </TableBody>
         </Table>

@@ -17,9 +17,10 @@ export function formatBytes(bytes: number): string {
 	return `${formattedBytes} ${sizes[i]}`;
 };
 
-export function getFilesInDirectory(directoryPath: string): File[] {
+export function getFilesInDirectory(directoryPath: string, options?: { ignoreDsStore?: boolean }): File[] {
 	const absolutePath = directoryPath;
-	const filenames = fs.readdirSync(absolutePath);
+	const filenames = fs.readdirSync(absolutePath)
+		.filter((filename) => !(options?.ignoreDsStore && filename === '.DS_Store'));
 
 	return filenames.map((filename): File => {
 		const fileInfo = fs.statSync(path.join(absolutePath, filename));
