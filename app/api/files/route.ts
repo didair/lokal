@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { DATA_DIR, dataPath } from "@/lib/data-dir";
 import fs from 'fs/promises';
 import path from 'path';
+import { formatBytes } from "@/lib/file-utils";
+import { getMimeType, getPreviewType } from "@/lib/mime";
 
 function cleanRelativePath(input: unknown, allowEmpty = true) {
 	const value = input?.toString() ?? '';
@@ -149,6 +151,47 @@ export async function POST(request: Request) {
 	};
 
 	return NextResponse.json(response);
+}
+
+export async function GET(request: Request) {
+	try {
+		const user = await getUser();
+		if (!user) {
+			return NextResponse.json(null, { status: 401 });
+		}
+
+		const url = new URL(request.url);
+		const itemPath = cleanRelativePath(url.searchParams.get('path'), false);
+		const { absolutePath } = resolveUserPath(user.rootDir, itemPath);
+		const info = await fs.stat(absolutePath);
+		const previewType = getPreviewType(absolutePath);
+		const metadata: Record<string, string | number | boolean> = {
+			name: path.basename(absolutePath),
+			path: `/${itemPath}`,
+			type: info.isDirectory() ? 'Directory' : info.isFile() ? 'File' : 'Other',
+			size: formatBytes(info.size),
+			bytes: info.size,
+			modified: info.mtime.toISOString(),
+			created: info.birthtime.toISOString(),
+			mimeType: info.isFile() ? getMimeType(absolutePath) : 'inode/directory',
+			readable: true,
+			writable: true,
+		};
+		let text: string | null = null;
+
+		if (previewType === 'text' && info.size <= 1024 * 1024) {
+			text = await fs.readFile(absolutePath, 'utf8');
+		}
+
+		return NextResponse.json({
+			metadata,
+			previewType,
+			text,
+			rawUrl: `/file/u?path=${encodeURIComponent(itemPath)}&inline=1`,
+		});
+	} catch (error) {
+		return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not read file metadata' }, { status: 400 });
+	}
 }
 
 export async function PUT(request: Request) {

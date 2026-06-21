@@ -86,6 +86,11 @@
   ::selection {
     @apply bg-rose-100 text-rose-950;
   }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 @keyframes lokal-working {

@@ -5,7 +5,7 @@ import type { File } from "@/lib/file-utils";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "../ui/context-menu";
-import { FileIcon, FolderIcon, CircleAlertIcon, Share2, MoreHorizontal } from "lucide-react";
+import { FileIcon, FolderIcon, CircleAlertIcon, Share2, MoreHorizontal, Info, PanelRightOpen } from "lucide-react";
 import { TableRow, TableCell } from "../ui/table";
 import { formatDate } from "@/lib/utils";
 import { ShareDialog, type ShareSummary } from "./sharedialog";
@@ -51,6 +51,15 @@ export const ItemTableRow = ({
 	onSharesChange?: () => void,
 }) => {
 	const [shareOpen, setShareOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [metadataOpen, setMetadataOpen] = useState(false);
+	const [fileDetails, setFileDetails] = useState<{
+		metadata: Record<string, string | number | boolean>;
+		previewType: 'image' | 'video' | 'text' | 'unsupported';
+		text: string | null;
+		rawUrl: string;
+	} | null>(null);
+	const [previewError, setPreviewError] = useState('');
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [moveOpen, setMoveOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
@@ -70,6 +79,26 @@ export const ItemTableRow = ({
 		onTagsChange();
 		onSharesChange();
 	};
+
+	useEffect(() => {
+		if (!previewOpen || file.type !== 'file') {
+			return;
+		}
+
+		setFileDetails(null);
+		setPreviewError('');
+
+		fetch(`/api/files?path=${encodeURIComponent(itemPath)}`)
+			.then(async (response) => {
+				const body = await response.json();
+				if (!response.ok) {
+					throw new Error(body.error || 'Could not open file');
+				}
+
+				setFileDetails(body);
+			})
+			.catch((openError) => setPreviewError(openError instanceof Error ? openError.message : 'Could not open file'));
+	}, [file.type, itemPath, previewOpen]);
 
 	const renameItem = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -143,6 +172,15 @@ export const ItemTableRow = ({
 		setError('');
 		setMoveOpen(true);
 	};
+	const openFile = () => {
+		if (file.type === 'file' && actions === 'owner') {
+			setMetadataOpen(false);
+			setPreviewOpen(true);
+			return;
+		}
+
+		onNavigate(file);
+	};
 
 	return (
 		<>
@@ -175,7 +213,7 @@ export const ItemTableRow = ({
 												onClick={(e) => {
 													if (!href) {
 														e.preventDefault();
-														onNavigate(file);
+														openFile();
 													}
 												}}
 												className="break-all font-medium"
@@ -329,6 +367,111 @@ export const ItemTableRow = ({
 			existingShares={activeShares}
 			onSharesChange={onSharesChange}
 		/>
+
+		<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+			<DialogContent className="max-h-[90dvh] max-w-5xl overflow-hidden p-0">
+				<div className="flex max-h-[90dvh] min-h-[70dvh] flex-col">
+					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-28">
+						<div className="flex min-w-0 items-start justify-between gap-4">
+							<div className="min-w-0">
+								<DialogTitle className="flex items-center gap-2 truncate">
+									<FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+									<span className="truncate">{file.name}</span>
+								</DialogTitle>
+								<DialogDescription className="truncate">/{itemPath.replace(/^\/+/, '')}</DialogDescription>
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="absolute right-12 top-3.5"
+								onClick={() => setMetadataOpen((value) => !value)}
+							>
+								<PanelRightOpen className="mr-2 h-4 w-4" />
+								{metadataOpen ? 'Hide details' : 'Details'}
+							</Button>
+						</div>
+					</DialogHeader>
+
+					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,1fr)_auto]">
+						<div className="flex min-h-0 items-center justify-center overflow-auto bg-zinc-50/70 p-4">
+							{previewError ? (
+								<div className="flex h-full min-h-64 items-center justify-center text-sm text-red-600">{previewError}</div>
+							) : null}
+
+							{!previewError && !fileDetails ? (
+								<div className="flex h-full min-h-64 items-center justify-center text-sm text-muted-foreground">Opening file...</div>
+							) : null}
+
+							{fileDetails?.previewType === 'image' ? (
+								<div className="flex min-h-64 items-center justify-center">
+									<img src={fileDetails.rawUrl} alt={file.name} className="max-h-[62dvh] max-w-full rounded-xl object-contain shadow-sm" />
+								</div>
+							) : null}
+
+							{fileDetails?.previewType === 'video' ? (
+								<div className="flex min-h-64 items-center justify-center">
+									<video src={fileDetails.rawUrl} controls className="max-h-[62dvh] max-w-full rounded-xl bg-black shadow-sm" />
+								</div>
+							) : null}
+
+							{fileDetails?.previewType === 'text' ? (
+								<pre className="max-h-[62dvh] w-full max-w-3xl overflow-auto whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm leading-6 text-zinc-800 shadow-sm">
+									{fileDetails.text ?? 'Text preview is too large to display.'}
+								</pre>
+							) : null}
+
+							{fileDetails?.previewType === 'unsupported' ? (
+								<div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+									<FileIcon className="h-10 w-10 text-zinc-300" />
+									<span>No preview available for this file type.</span>
+									<Button asChild variant="outline">
+										<a href={`/file/u?path=${encodeURIComponent(itemPath)}`}>Download file</a>
+									</Button>
+								</div>
+							) : null}
+						</div>
+
+						{metadataOpen ? (
+							<aside className="min-h-0 w-full overflow-auto border-l border-zinc-200 bg-white p-4 md:w-72">
+								<div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+									<Info className="h-4 w-4" />
+									Metadata
+								</div>
+								<table className="w-full text-sm">
+									<tbody>
+										{Object.entries(fileDetails?.metadata ?? {}).map(([key, value]) => (
+											<tr key={key} className="border-b border-zinc-100 last:border-0">
+												<td className="py-2 pr-3 text-xs font-medium uppercase tracking-[0.08em] text-zinc-400">{key}</td>
+												<td className="break-all py-2 text-right text-zinc-700">{String(value)}</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</aside>
+						) : null}
+					</div>
+
+					<DialogFooter className="border-t border-zinc-200/80 px-5 py-3 sm:items-center sm:justify-between">
+						<div className="flex min-w-0 flex-1 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+							<span className="text-xs font-medium uppercase tracking-[0.08em] text-zinc-400">Tags</span>
+							<TagSelector
+								path={itemPath}
+								tags={tags}
+								assignedTags={assignedTags}
+								onChange={refreshData}
+							/>
+						</div>
+						<div className="flex gap-2">
+							<Button type="button" onClick={() => setShareOpen(true)}>
+								<Share2 className="mr-2 h-4 w-4" />
+								Share
+							</Button>
+						</div>
+					</DialogFooter>
+				</div>
+			</DialogContent>
+		</Dialog>
 
 		<Dialog open={renameOpen} onOpenChange={setRenameOpen}>
 			<DialogContent>

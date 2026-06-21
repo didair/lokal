@@ -245,11 +245,6 @@ export const FileView = () => {
 				<div className="h-0.5 overflow-hidden bg-rose-100/80">
 					<div className="h-full w-1/3 animate-[lokal-working_1.25s_ease-in-out_infinite] rounded-full bg-rose-500/70" />
 				</div>
-				<div className="flex justify-end px-4 pt-2">
-					<span className="rounded-full border border-zinc-200/80 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-500 shadow-sm backdrop-blur">
-						Reading folder
-					</span>
-				</div>
 			</div>
 
 			{!selectedTagId ? (
