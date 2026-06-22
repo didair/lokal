@@ -57,7 +57,7 @@ export const ItemTableRow = ({
 	const [metadataOpen, setMetadataOpen] = useState(false);
 	const [fileDetails, setFileDetails] = useState<{
 		metadata: Record<string, string | number | boolean>;
-		previewType: 'image' | 'video' | 'text' | 'unsupported';
+		previewType: 'image' | 'video' | 'pdf' | 'text' | 'unsupported';
 		text: string | null;
 		rawUrl: string;
 	} | null>(null);
@@ -429,6 +429,12 @@ export const ItemTableRow = ({
 							{fileDetails?.previewType === 'video' ? (
 								<div className="flex min-h-64 items-center justify-center">
 									<video src={fileDetails.rawUrl} controls className="max-h-[62dvh] max-w-full rounded-xl bg-black shadow-sm" />
+								</div>
+							) : null}
+
+							{fileDetails?.previewType === 'pdf' ? (
+								<div className="h-[62dvh] min-h-64 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+									<iframe src={fileDetails.rawUrl} title={file.name} className="h-full w-full" />
 								</div>
 							) : null}
 

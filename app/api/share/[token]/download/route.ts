@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { dataPath } from '@/lib/data-dir';
 import { getCurrentSession } from '@/lib/user';
+import { getMimeType } from '@/lib/mime';
 
 async function getValidShare(token: string) {
   const share = await prisma.share.findUnique({ where: { token } });
@@ -23,7 +24,12 @@ async function getValidShare(token: string) {
   return share;
 }
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+function contentDisposition(type: 'inline' | 'attachment', filename: string) {
+  const safeName = filename.replace(/"/g, '\\"');
+  return `${type}; filename="${safeName}"`;
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const share = await getValidShare(token);
 
@@ -32,18 +38,52 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 
   const filePath = dataPath(share.ownerRootDir, share.path);
-  const body = fs.readFileSync(filePath);
+  const fileInfo = fs.statSync(filePath);
 
-  if (share.maxReads != null) {
+  if (!fileInfo.isFile()) {
+    return NextResponse.json(null, { status: 404 });
+  }
+
+  const inline = request.nextUrl.searchParams.get('inline') === '1';
+  const filename = path.basename(share.path);
+  const range = request.headers.get('range');
+  const mimeType = getMimeType(filePath);
+  const headers = {
+    'content-type': mimeType,
+    'content-disposition': contentDisposition(inline ? 'inline' : 'attachment', filename),
+    'accept-ranges': 'bytes',
+  };
+
+  if (!inline && share.maxReads != null) {
     await prisma.share.update({
       where: { id: share.id },
       data: { readCount: { increment: 1 } },
     });
   }
 
-  return new Response(body, {
+  if (range) {
+    const [startValue, endValue] = range.replace(/bytes=/, '').split('-');
+    const start = Number.parseInt(startValue, 10);
+    const end = endValue ? Number.parseInt(endValue, 10) : fileInfo.size - 1;
+
+    if (Number.isNaN(start) || Number.isNaN(end) || start > end) {
+      return new Response(null, { status: 416 });
+    }
+
+    return new Response(fs.createReadStream(filePath, { start, end }) as any, {
+      status: 206,
+      headers: {
+        ...headers,
+        'content-range': `bytes ${start}-${end}/${fileInfo.size}`,
+        'content-length': String(end - start + 1),
+      },
+    });
+  }
+
+  return new Response(fs.createReadStream(filePath) as any, {
     headers: {
-      'content-disposition': `attachment; filename="${path.basename(share.path)}"`,
+      ...headers,
+      'content-length': String(fileInfo.size),
     },
   });
 }

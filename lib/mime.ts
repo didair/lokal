@@ -25,6 +25,7 @@ const mimeTypes: Record<string, string> = {
   '.webm': 'video/webm',
   '.mov': 'video/quicktime',
   '.m4v': 'video/x-m4v',
+  '.pdf': 'application/pdf',
 };
 
 export function getMimeType(filePath: string) {
@@ -36,6 +37,7 @@ export function getPreviewType(filePath: string) {
 
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.includes('pdf')) return 'pdf';
   if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('xml')) return 'text';
 
   return 'unsupported';
