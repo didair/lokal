@@ -166,6 +166,16 @@ function DownloadButton({ token, label = 'Download file' }: { token: string; lab
   );
 }
 
+function RawFileButton({ token }: { token: string }) {
+  return (
+    <Button asChild variant="ghost" className="h-11 rounded-xl px-4 text-zinc-600 hover:text-zinc-950">
+      <a href={`/api/share/${token}/download?inline=1`} target="_blank" rel="noreferrer">
+        Open file
+      </a>
+    </Button>
+  );
+}
+
 export default async function SharePage({ params }: SharePageProps) {
   const { token } = await params;
   const share = await getShare(token);
@@ -194,7 +204,8 @@ export default async function SharePage({ params }: SharePageProps) {
                 />
               </p>
             </div>
-            <div className="shrink-0">
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <RawFileButton token={share.token} />
               <DownloadButton token={share.token} />
             </div>
           </div>
