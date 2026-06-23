@@ -10,7 +10,7 @@ export const Sidebar = async () => {
 	const tags = await getTags();
 
 	return (
-		<div className="flex h-full max-h-screen flex-col gap-4">
+		<div className="flex h-dvh flex-col gap-4">
 			<div className="flex h-16 items-center border-b border-zinc-200/80 px-4 lg:px-5">
 				<Link href="/" className="flex min-w-0 items-center gap-3 font-semibold" prefetch={false}>
 					<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-sm shadow-rose-500/25">

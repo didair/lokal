@@ -10,7 +10,7 @@ export default function MainLayout({
 }>) {
   return (
     <div className="grid min-h-dvh w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <aside className="hidden border-r border-zinc-200/80 bg-white/70 backdrop-blur-xl md:block">
+      <aside className="sticky top-0 hidden h-dvh self-start border-r border-zinc-200/80 bg-white/70 backdrop-blur-xl md:block">
         <Sidebar />
       </aside>
 
