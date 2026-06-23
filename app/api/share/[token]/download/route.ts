@@ -1,10 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { ZipArchive } from 'archiver';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { dataPath } from '@/lib/data-dir';
 import { getCurrentSession } from '@/lib/user';
 import { getMimeType } from '@/lib/mime';
+
+export const runtime = 'nodejs';
 
 async function getValidShare(token: string) {
   const share = await prisma.share.findUnique({ where: { token } });
@@ -24,28 +27,48 @@ async function getValidShare(token: string) {
   return share;
 }
 
+function cleanRelativePath(input: string | null) {
+  return (input ?? '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter(Boolean)
+    .filter((part) => part !== '.' && part !== '..')
+    .join('/');
+}
+
 function contentDisposition(type: 'inline' | 'attachment', filename: string) {
   const safeName = filename.replace(/"/g, '\\"');
   return `${type}; filename="${safeName}"`;
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
-  const share = await getValidShare(token);
+function zipName(name: string) {
+  const base = path.basename(name).replace(/\.zip$/i, '') || 'shared-folder';
+  return `${base}.zip`;
+}
 
-  if (!share || share.fileType !== 'file') {
-    return NextResponse.json(null, { status: 404 });
+function resolveSharedPath(share: NonNullable<Awaited<ReturnType<typeof getValidShare>>>, childPath: string | null) {
+  const shareRootPath = path.resolve(dataPath(share.ownerRootDir, share.path));
+  const relativeChildPath = cleanRelativePath(childPath);
+  const targetPath = path.resolve(shareRootPath, relativeChildPath);
+
+  if (targetPath !== shareRootPath && !targetPath.startsWith(`${shareRootPath}${path.sep}`)) {
+    throw new Error('Invalid path');
   }
 
-  const filePath = dataPath(share.ownerRootDir, share.path);
+  return { targetPath, relativeChildPath };
+}
+
+async function incrementReadCount(shareId: string, shouldIncrement: boolean) {
+  if (!shouldIncrement) return;
+
+  await prisma.share.update({
+    where: { id: shareId },
+    data: { readCount: { increment: 1 } },
+  });
+}
+
+function streamFile(filePath: string, request: NextRequest, filename: string, inline: boolean) {
   const fileInfo = fs.statSync(filePath);
-
-  if (!fileInfo.isFile()) {
-    return NextResponse.json(null, { status: 404 });
-  }
-
-  const inline = request.nextUrl.searchParams.get('inline') === '1';
-  const filename = path.basename(share.path);
   const range = request.headers.get('range');
   const mimeType = getMimeType(filePath);
   const headers = {
@@ -53,13 +76,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     'content-disposition': contentDisposition(inline ? 'inline' : 'attachment', filename),
     'accept-ranges': 'bytes',
   };
-
-  if (!inline && share.maxReads != null) {
-    await prisma.share.update({
-      where: { id: share.id },
-      data: { readCount: { increment: 1 } },
-    });
-  }
 
   if (range) {
     const [startValue, endValue] = range.replace(/bytes=/, '').split('-');
@@ -86,4 +102,49 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       'content-length': String(fileInfo.size),
     },
   });
+}
+
+function streamZip(directoryPath: string, filename: string) {
+  const archive = new ZipArchive({ zlib: { level: 9 } });
+  archive.directory(directoryPath, false);
+  archive.finalize();
+
+  return new Response(archive as any, {
+    headers: {
+      'content-type': 'application/zip',
+      'content-disposition': contentDisposition('attachment', filename),
+    },
+  });
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const share = await getValidShare(token);
+
+  if (!share) {
+    return NextResponse.json(null, { status: 404 });
+  }
+
+  try {
+    const childPath = request.nextUrl.searchParams.get('path');
+    const inline = request.nextUrl.searchParams.get('inline') === '1';
+    const { targetPath, relativeChildPath } = share.fileType === 'dir'
+      ? resolveSharedPath(share, childPath)
+      : { targetPath: path.resolve(dataPath(share.ownerRootDir, share.path)), relativeChildPath: '' };
+    const fileInfo = fs.statSync(targetPath);
+
+    if (fileInfo.isDirectory()) {
+      await incrementReadCount(share.id, !inline && share.maxReads != null);
+      return streamZip(targetPath, zipName(relativeChildPath || share.name || share.path));
+    }
+
+    if (!fileInfo.isFile()) {
+      return NextResponse.json(null, { status: 404 });
+    }
+
+    await incrementReadCount(share.id, !inline && share.maxReads != null);
+    return streamFile(targetPath, request, path.basename(targetPath), inline);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not read shared item' }, { status: 400 });
+  }
 }

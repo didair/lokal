@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import path from 'path';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { Download, FileIcon, FolderIcon } from 'lucide-react';
@@ -7,9 +8,9 @@ import { getCurrentSession } from '@/lib/user';
 import { dataPath } from '@/lib/data-dir';
 import { getFilesInDirectory } from '@/lib/file-utils';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate } from '@/lib/utils';
 import { ShareTiming } from '@/components/blocks/sharetiming';
+import { SharedFolderBrowser } from '@/components/blocks/sharedfolderbrowser';
 import { getMimeType, getPreviewType } from '@/lib/mime';
 
 export const dynamic = 'force-dynamic';
@@ -18,9 +19,16 @@ const SHARE_DESCRIPTION = 'A file was shared with you';
 
 type SharePageProps = {
   params: Promise<{ token: string }>;
+  searchParams?: Promise<{ path?: string; preview?: string }>;
 };
 
 type Share = NonNullable<Awaited<ReturnType<typeof getShare>>>;
+
+type Preview = {
+  previewType: 'image' | 'video' | 'pdf' | 'text' | 'unsupported';
+  mimeType: string;
+  text: string | null;
+};
 
 async function getShare(token: string) {
   const share = await prisma.share.findUnique({
@@ -52,14 +60,45 @@ async function ensureCanViewShare(share: Share) {
   }
 }
 
-function inlineUrl(token: string) {
-  return `/api/share/${token}/download?inline=1`;
+function cleanRelativePath(input?: string | null) {
+  return (input ?? '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter(Boolean)
+    .filter((part) => part !== '.' && part !== '..')
+    .join('/');
 }
 
-async function getFilePreview(share: Share) {
-  const filePath = dataPath(share.ownerRootDir, share.path);
+function joinRelativePath(base: string, child: string) {
+  return cleanRelativePath(`${base}/${child}`);
+}
+
+function downloadUrl(token: string, childPath?: string, inline = false) {
+  const params = new URLSearchParams();
+  const cleanChildPath = cleanRelativePath(childPath);
+
+  if (cleanChildPath) params.set('path', cleanChildPath);
+  if (inline) params.set('inline', '1');
+
+  const query = params.toString();
+  return `/api/share/${token}/download${query ? `?${query}` : ''}`;
+}
+
+function resolveDirectorySharePath(share: Share, childPath?: string | null) {
+  const rootPath = path.resolve(dataPath(share.ownerRootDir, share.path));
+  const relativePath = cleanRelativePath(childPath);
+  const targetPath = path.resolve(rootPath, relativePath);
+
+  if (targetPath !== rootPath && !targetPath.startsWith(`${rootPath}${path.sep}`)) {
+    throw new Error('Invalid path');
+  }
+
+  return { rootPath, targetPath, relativePath };
+}
+
+async function getFilePreview(filePath: string): Promise<Preview> {
   const info = await fs.stat(filePath);
-  const previewType = getPreviewType(filePath) as 'image' | 'video' | 'pdf' | 'text' | 'unsupported';
+  const previewType = getPreviewType(filePath) as Preview['previewType'];
   const mimeType = getMimeType(filePath);
   let text: string | null = null;
 
@@ -112,13 +151,11 @@ function PageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FilePreview({ share, preview }: { share: Share; preview: Awaited<ReturnType<typeof getFilePreview>> }) {
-  const src = inlineUrl(share.token);
-
+function FilePreview({ name, preview, src }: { name: string; preview: Preview; src: string }) {
   if (preview.previewType === 'image') {
     return (
       <div className="flex h-[62dvh] min-h-64 w-full items-center justify-center bg-white p-4">
-        <img src={src} alt={share.name} className="h-full w-full object-contain" />
+        <img src={src} alt={name} className="h-full w-full object-contain" />
       </div>
     );
   }
@@ -134,7 +171,7 @@ function FilePreview({ share, preview }: { share: Share; preview: Awaited<Return
   if (preview.previewType === 'pdf') {
     return (
       <div className="h-[70dvh] min-h-96 overflow-hidden bg-zinc-100">
-        <iframe src={src} title={share.name} className="h-full w-full" />
+        <iframe src={src} title={name} className="h-full w-full" />
       </div>
     );
   }
@@ -155,10 +192,10 @@ function FilePreview({ share, preview }: { share: Share; preview: Awaited<Return
   );
 }
 
-function DownloadButton({ token, label = 'Download file' }: { token: string; label?: string }) {
+function DownloadButton({ href, label = 'Download file' }: { href: string; label?: string }) {
   return (
     <Button asChild className="h-11 rounded-xl px-5">
-      <a href={`/api/share/${token}/download`}>
+      <a href={href}>
         <Download className="mr-2 h-4 w-4" />
         {label}
       </a>
@@ -166,18 +203,20 @@ function DownloadButton({ token, label = 'Download file' }: { token: string; lab
   );
 }
 
-function RawFileButton({ token }: { token: string }) {
+function OpenFileButton({ href, label = 'Open file' }: { href: string; label?: string }) {
   return (
     <Button asChild variant="ghost" className="h-11 rounded-xl px-4 text-zinc-600 hover:text-zinc-950">
-      <a href={`/api/share/${token}/download?inline=1`} target="_blank" rel="noreferrer">
-        Open file
+      <a href={href} target="_blank" rel="noreferrer">
+        {label}
       </a>
     </Button>
   );
 }
 
-export default async function SharePage({ params }: SharePageProps) {
+export default async function SharePage({ params, searchParams }: SharePageProps) {
   const { token } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const browsePathParam = resolvedSearchParams.path;
   const share = await getShare(token);
 
   if (!share) {
@@ -187,7 +226,8 @@ export default async function SharePage({ params }: SharePageProps) {
   await ensureCanViewShare(share);
 
   if (share.fileType === 'file') {
-    const preview = await getFilePreview(share);
+    const filePath = dataPath(share.ownerRootDir, share.path);
+    const preview = await getFilePreview(filePath);
 
     return (
       <PageShell>
@@ -205,60 +245,67 @@ export default async function SharePage({ params }: SharePageProps) {
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              <RawFileButton token={share.token} />
-              <DownloadButton token={share.token} />
+              <OpenFileButton href={downloadUrl(share.token, undefined, true)} />
+              <DownloadButton href={downloadUrl(share.token)} />
             </div>
           </div>
-          <FilePreview share={share} preview={preview} />
+          <FilePreview name={share.name} preview={preview} src={downloadUrl(share.token, undefined, true)} />
         </section>
       </PageShell>
     );
   }
 
+  const browsePath = cleanRelativePath(browsePathParam);
+  const { targetPath } = resolveDirectorySharePath(share, browsePath);
   const ignoreDsStore = (await prisma.setting.findUnique({
     where: { id: 'files-ignore-ds-store' },
   }))?.value === 'true';
-  const files = getFilesInDirectory(dataPath(share.ownerRootDir, share.path), { ignoreDsStore });
-
-  if (share.maxReads != null) {
-    await prisma.share.update({
-      where: { id: share.id },
-      data: { readCount: { increment: 1 } },
-    });
-  }
-
+  const files = getFilesInDirectory(targetPath, { ignoreDsStore }).sort((a, b) => {
+    if (a.type === b.type) return a.name.localeCompare(b.name);
+    return a.type === 'dir' ? -1 : 1;
+  });
   return (
     <PageShell>
       <section className="w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm shadow-zinc-900/5">
-        <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500">
-            <FolderIcon className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-zinc-950">{share.name}</h1>
-            <p className="mt-1 text-sm text-zinc-500">A folder was shared with you</p>
+        <div className="flex flex-col gap-4 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500">
+              <FolderIcon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-zinc-950">{share.name}</h1>
+              <p className="mt-1 truncate text-sm text-zinc-500">
+                {browsePath ? (
+                  `/${browsePath}`
+                ) : (
+                  <ShareTiming
+                    createdAt={share.createdAt.toISOString()}
+                    expiresAt={share.expiresAt?.toISOString() ?? null}
+                    expiresAfterDownload={share.maxReads === 1}
+                    fallback={`Shared ${formatDate(share.createdAt)}`}
+                  />
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <DownloadButton href={downloadUrl(share.token, browsePath)} label="Download folder" />
           </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Size</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {files.map((file) => (
-              <TableRow key={file.name}>
-                <TableCell className="font-medium text-zinc-900">{file.name}</TableCell>
-                <TableCell>{file.type === 'dir' ? 'Directory' : 'File'}</TableCell>
-                <TableCell>{formatDate(file.date)}</TableCell>
-                <TableCell>{file.type === 'dir' ? '-' : file.size}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+
+        <SharedFolderBrowser
+          token={share.token}
+          browsePath={browsePath}
+          files={files.map((file) => {
+            const filePath = joinRelativePath(browsePath, file.name);
+            return {
+              ...file,
+              date: file.date.toISOString(),
+              path: filePath,
+              previewType: file.type === 'file' ? (getPreviewType(filePath) as 'image' | 'video' | 'pdf' | 'text' | 'unsupported') : 'unsupported',
+            };
+          })}
+        />
       </section>
     </PageShell>
   );

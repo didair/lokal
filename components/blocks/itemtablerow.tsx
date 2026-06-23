@@ -285,9 +285,9 @@ export const ItemTableRow = ({
 														</DropdownMenuItem>
 													) : null}
 
-													{actions === 'owner' && file.type == 'file' ?
+													{actions === 'owner' && (file.type == 'file' || file.type == 'dir') ?
 														<DropdownMenuItem asChild>
-															<a href={`/file/u?path=${download_path}`} target="_blank" className="cursor-pointer">
+															<a href={`/file/u?path=${encodeURIComponent(download_path)}`} target="_blank" className="cursor-pointer">
 																Download
 															</a>
 														</DropdownMenuItem>
@@ -358,9 +358,9 @@ export const ItemTableRow = ({
 					</ContextMenuItem>
 				) : null}
 
-				{actions === 'owner' && file.type == 'file' ?
+				{actions === 'owner' && (file.type == 'file' || file.type == 'dir') ?
 					<ContextMenuItem asChild>
-						<a href={`/file/u?path=${download_path}`} target="_blank" className="cursor-pointer">
+						<a href={`/file/u?path=${encodeURIComponent(download_path)}`} target="_blank" className="cursor-pointer">
 							Download
 						</a>
 					</ContextMenuItem>

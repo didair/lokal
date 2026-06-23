@@ -3,7 +3,10 @@ import { getCurrentUser } from "@/lib/actions";
 import path from "path";
 import { DATA_DIR } from "@/lib/data-dir";
 import fs from "fs";
+import { ZipArchive } from "archiver";
 import { getMimeType } from "@/lib/mime";
+
+export const runtime = 'nodejs';
 
 function cleanRelativePath(value: string) {
 	return value
@@ -25,6 +28,29 @@ function resolveFilePath(rootDir: string, requestedPath: string) {
 	return filePath;
 }
 
+function contentDisposition(type: 'inline' | 'attachment', filename: string) {
+	const safeName = filename.replace(/"/g, '\\"');
+	return `${type}; filename="${safeName}"`;
+}
+
+function zipName(name: string) {
+	const base = path.basename(name).replace(/\.zip$/i, '') || 'folder';
+	return `${base}.zip`;
+}
+
+function streamZip(directoryPath: string, filename: string) {
+	const archive = new ZipArchive({ zlib: { level: 9 } });
+	archive.directory(directoryPath, false);
+	archive.finalize();
+
+	return new Response(archive as any, {
+		headers: {
+			'content-type': 'application/zip',
+			'content-disposition': contentDisposition('attachment', filename),
+		},
+	});
+}
+
 export async function GET(request: NextRequest) {
 	const user = await getCurrentUser();
 	const requestedPath = request.nextUrl.searchParams.get('path');
@@ -37,6 +63,10 @@ export async function GET(request: NextRequest) {
 		const filePath = resolveFilePath(user.rootDir, requestedPath);
 		const fileInfo = fs.statSync(filePath);
 
+		if (fileInfo.isDirectory()) {
+			return streamZip(filePath, zipName(filePath));
+		}
+
 		if (!fileInfo.isFile()) {
 			return NextResponse.json(null, { status: 404 });
 		}
@@ -47,7 +77,7 @@ export async function GET(request: NextRequest) {
 		const range = request.headers.get('range');
 		const baseHeaders = {
 			'content-type': mimeType,
-			'content-disposition': `${inline ? 'inline' : 'attachment'}; filename="${attachmentName}"`,
+			'content-disposition': contentDisposition(inline ? 'inline' : 'attachment', attachmentName),
 			'accept-ranges': 'bytes',
 		};
 
