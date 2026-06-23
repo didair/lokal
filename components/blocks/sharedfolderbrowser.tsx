@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Download, ExternalLink, FileIcon, FolderIcon, FolderUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate } from '@/lib/utils';
 
@@ -156,12 +156,11 @@ export function SharedFolderBrowser({ token, browsePath, files }: SharedFolderBr
         <DialogContent className="max-h-[90dvh] max-w-5xl overflow-hidden p-0">
           {previewFile ? (
             <div className="flex max-h-[90dvh] min-h-[70dvh] flex-col">
-              <DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-12">
-                <DialogTitle className="flex items-center gap-2 truncate">
-                  <FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{previewFile.name}</span>
+              <DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-16">
+                <DialogTitle className="flex items-start gap-2 text-left leading-snug">
+                  <FileIcon className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 break-words pr-2">{previewFile.name}</span>
                 </DialogTitle>
-                <DialogDescription className="truncate">/{previewFile.path}</DialogDescription>
               </DialogHeader>
 
               <div className="min-h-0 flex-1 overflow-auto">

@@ -398,12 +398,11 @@ export const ItemTableRow = ({
 				onFocusOutside={keepPreviewOpenForFloatingUi}
 			>
 				<div className="flex max-h-[90dvh] min-h-[70dvh] flex-col">
-					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-12">
-						<DialogTitle className="flex items-center gap-2 truncate">
-							<FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-							<span className="truncate">{file.name}</span>
+					<DialogHeader className="border-b border-zinc-200/80 px-5 py-4 pr-16">
+						<DialogTitle className="flex items-start gap-2 text-left leading-snug">
+							<FileIcon className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+							<span className="min-w-0 break-words pr-2">{file.name}</span>
 						</DialogTitle>
-						<DialogDescription className="truncate">/{itemPath.replace(/^\/+/, '')}</DialogDescription>
 					</DialogHeader>
 
 					<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,1fr)_auto]">
