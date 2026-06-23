@@ -156,11 +156,18 @@ Owners/admins can still view registered apps and active tokens in **Settings →
 
 ### API discovery
 
-External apps can read this endpoint to find the instance API base and supported features:
+External apps can read this endpoint to find the instance API base, supported features, and contract URLs:
 
 ```sh
 curl https://files.example.com/.well-known/lokal
 ```
+
+The response includes links to:
+
+- `/contracts/openapi.json`
+- `/contracts/lokal-manifest.schema.json`
+
+SDK repositories should consume those contracts or pin to the same files from a tagged Lokal release.
 
 ### Collection records API
 
@@ -193,6 +200,12 @@ curl -X PUT "$BASE/value" \
 
 curl -H "Authorization: Bearer $TOKEN" "$BASE/value"
 ```
+
+### Contract drift checks
+
+Lokal keeps the SDK-facing API contract in `contracts/`. The build runs `npm run contracts:check`, which compares implemented platform routes with `contracts/openapi.json`. If an endpoint is added, removed, or changes HTTP methods without updating the contract, the build fails.
+
+Breaking API changes should update `contracts/openapi.json` and bump its `info.version` so SDK repos can pin or regenerate safely.
 
 ### Current limitations
 

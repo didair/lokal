@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "npm run contracts:check && npx prisma generate && next build",
     "dev:docker": "npx prisma generate && next dev --webpack --hostname 0.0.0.0 --port 3333",
     "start": "next start",
     "lint": "eslint .",
     "postinstall": "npx prisma generate",
     "docker:dev": "docker compose -f docker-compose.dev.yml up --build -d",
-    "docker:push:production": "sh ./scripts/push_production.sh"
+    "docker:push:production": "sh ./scripts/push_production.sh",
+    "contracts:check": "node scripts/check-contracts.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
