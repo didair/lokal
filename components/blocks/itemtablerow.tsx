@@ -555,6 +555,8 @@ export const ItemTableRow = ({
 							key={`${itemPath}-${currentPath}`}
 							name="destinationPath"
 							defaultValue={currentPath || '/'}
+							scope="user"
+							rootLabel="Files"
 						/>
 						{error ? <p className="text-sm text-red-600">{error}</p> : null}
 					</div>

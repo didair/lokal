@@ -31,10 +31,14 @@ export function DirectorySelect({
 	name = "rootDir",
 	defaultValue = "/",
 	placeholder = "Select directory",
+	scope = "data",
+	rootLabel = scope === "data" ? "Data" : "Files",
 }: {
 	name?: string;
 	defaultValue?: string;
 	placeholder?: string;
+	scope?: "data" | "user";
+	rootLabel?: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const [selectedPath, setSelectedPath] = useState(normalizePath(defaultValue));
@@ -63,7 +67,7 @@ export function DirectorySelect({
 		setLoading(true);
 		setError("");
 
-		fetch(`/api/rootdirs?path=${encodeURIComponent(browsePath)}`)
+		fetch(`/api/rootdirs?path=${encodeURIComponent(browsePath)}&scope=${scope}`)
 			.then(async (response) => {
 				const body = await response.json();
 				if (!response.ok) {
@@ -76,7 +80,7 @@ export function DirectorySelect({
 			})
 			.catch((fetchError) => setError(fetchError instanceof Error ? fetchError.message : 'Could not read directories'))
 			.finally(() => setLoading(false));
-	}, [browsePath, open]);
+	}, [browsePath, open, scope]);
 
 	const visibleDirs = useMemo(() => {
 		const query = filter.trim().toLowerCase();
@@ -117,7 +121,7 @@ export function DirectorySelect({
 								className={cn("inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-medium", browsePath === '/' ? "bg-rose-50 text-rose-700" : "text-zinc-600 hover:bg-zinc-50")}
 							>
 								<HardDrive className="h-3.5 w-3.5" />
-								Data
+								{rootLabel}
 							</button>
 
 							{breadcrumb.map((part, index) => {
