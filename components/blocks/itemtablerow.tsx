@@ -295,11 +295,11 @@ export const ItemTableRow = ({
 
 													{actions === 'owner' ? (
 														<>
-															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</DropdownMenuItem>
-															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); openMoveDialog(); }}>Move</DropdownMenuItem>
-															<DropdownMenuItem onSelect={(event) => { event.preventDefault(); setError(''); setRenameOpen(true); }}>Rename</DropdownMenuItem>
+															<DropdownMenuItem onSelect={() => setShareOpen(true)}>Share</DropdownMenuItem>
+															<DropdownMenuItem onSelect={openMoveDialog}>Move</DropdownMenuItem>
+															<DropdownMenuItem onSelect={() => { setError(''); setRenameOpen(true); }}>Rename</DropdownMenuItem>
 															<DropdownMenuSeparator />
-															<DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(event) => { event.preventDefault(); setError(''); setDeleteOpen(true); }}>Delete</DropdownMenuItem>
+															<DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => { setError(''); setDeleteOpen(true); }}>Delete</DropdownMenuItem>
 														</>
 													) : null}
 												</DropdownMenuContent>
@@ -368,11 +368,11 @@ export const ItemTableRow = ({
 
 				{actions === 'owner' ? (
 					<>
-						<ContextMenuItem onSelect={(event) => { event.preventDefault(); setShareOpen(true); }}>Share</ContextMenuItem>
-						<ContextMenuItem onSelect={(event) => { event.preventDefault(); openMoveDialog(); }}>Move</ContextMenuItem>
-						<ContextMenuItem onSelect={(event) => { event.preventDefault(); setError(''); setRenameOpen(true); }}>Rename</ContextMenuItem>
+						<ContextMenuItem onSelect={() => setShareOpen(true)}>Share</ContextMenuItem>
+						<ContextMenuItem onSelect={openMoveDialog}>Move</ContextMenuItem>
+						<ContextMenuItem onSelect={() => { setError(''); setRenameOpen(true); }}>Rename</ContextMenuItem>
 						<ContextMenuSeparator />
-						<ContextMenuItem className="text-red-600 focus:text-red-600" onSelect={(event) => { event.preventDefault(); setError(''); setDeleteOpen(true); }}>Delete</ContextMenuItem>
+						<ContextMenuItem className="text-red-600 focus:text-red-600" onSelect={() => { setError(''); setDeleteOpen(true); }}>Delete</ContextMenuItem>
 					</>
 				) : null}
 			</ContextMenuContent>

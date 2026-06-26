@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { RefreshCcw, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { MoreHorizontal, RefreshCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type AppToken = {
   id: string;
@@ -28,11 +30,8 @@ type RegisteredApp = {
 export function AppsManager() {
   const [apps, setApps] = useState<RegisteredApp[]>([]);
   const [message, setMessage] = useState('');
-
-  const apiBase = useMemo(() => {
-    if (typeof window === 'undefined') return '/api/platform';
-    return `${window.location.origin}/api/platform`;
-  }, []);
+  const [deleteApp, setDeleteApp] = useState<RegisteredApp | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function loadApps() {
     const response = await fetch('/api/apps');
@@ -49,6 +48,16 @@ export function AppsManager() {
 
   async function revokeToken(appId: string, tokenId: string) {
     await fetch(`/api/apps/${appId}/tokens/${tokenId}`, { method: 'DELETE' });
+    await loadApps();
+  }
+
+  async function removeApp() {
+    if (!deleteApp) return;
+
+    setDeleting(true);
+    await fetch(`/api/apps/${deleteApp.id}`, { method: 'DELETE' });
+    setDeleting(false);
+    setDeleteApp(null);
     await loadApps();
   }
 
@@ -72,8 +81,26 @@ export function AppsManager() {
 
         {apps.map((app) => (
           <div key={app.id} className="rounded-xl border border-zinc-200 bg-white/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-zinc-950">{app.name}</h3>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label={`Manage ${app.name}`}>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={() => setDeleteApp(app)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete app
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
             <div>
-              <h3 className="font-semibold text-zinc-950">{app.name}</h3>
               <p className="mt-2 mb-4 text-sm text-muted-foreground">{app.description || 'No description'}</p>
               {app.developerName ?
                 <p className="font-mono text-xs text-zinc-500">Developer: {app.developerName}</p>
@@ -118,6 +145,26 @@ export function AppsManager() {
           </div>
         ))}
       </div>
+
+      <Dialog open={deleteApp != null} onOpenChange={(open) => !open && setDeleteApp(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete external app?</DialogTitle>
+            <DialogDescription>
+              This will delete {deleteApp?.name ?? 'this app'}, including its tokens and stored app data. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteApp(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={removeApp} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete app'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
