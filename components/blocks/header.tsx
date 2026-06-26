@@ -61,7 +61,7 @@ export const Header = async () => {
 								prefetch={false}
 							>
 								<UsersIcon className="h-5 w-5" />
-								Shared with me
+								Shared
 							</Link>
 						</SheetClose>
 

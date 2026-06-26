@@ -12,6 +12,23 @@ type SharedWithMeShare = Prisma.ShareGetPayload<{
 	},
 }>;
 
+type SharedByMeShare = Prisma.ShareGetPayload<{
+	include: {
+		recipient: { select: { id: true, name: true, email: true } },
+	},
+}>;
+
+const activeShareWhere = (now: Date) => ({
+	OR: [
+		{ expiresAt: null },
+		{ expiresAt: { gt: now } },
+	],
+});
+
+const isUnreadShare = (share: { maxReads: number | null; readCount: number }) => {
+	return share.maxReads == null || share.readCount < share.maxReads;
+};
+
 export async function authenticateAction(formData: FormData) {
 	const user = await signIn({
 		email: formData.get('email')?.toString() ?? '',
@@ -206,6 +223,7 @@ export async function getInvite(inviteId: string) {
 
 export async function getSharedWithMe(): Promise<SharedWithMeShare[]> {
 	const currentUser = await getCurrentUser();
+	const now = new Date();
 	const shares = await prisma.share.findMany({
 		where: {
 			access: 'private',
@@ -214,14 +232,7 @@ export async function getSharedWithMe(): Promise<SharedWithMeShare[]> {
 				{ recipientId: currentUser.id },
 				{ recipientId: null },
 			],
-			AND: [
-				{
-					OR: [
-						{ expiresAt: null },
-						{ expiresAt: { gt: new Date() } },
-					],
-				},
-			],
+			AND: [activeShareWhere(now)],
 		},
 		include: {
 			owner: { select: { name: true } },
@@ -229,7 +240,31 @@ export async function getSharedWithMe(): Promise<SharedWithMeShare[]> {
 		orderBy: { createdAt: 'desc' },
 	});
 
-	return shares.filter((share) => share.maxReads == null || share.readCount < share.maxReads);
+	return shares.filter(isUnreadShare);
+}
+
+export async function getSharedPageData(): Promise<{ sharedWithMe: SharedWithMeShare[]; sharedByMe: SharedByMeShare[] }> {
+	const currentUser = await getCurrentUser();
+	const now = new Date();
+
+	const [sharedWithMe, sharedByMe] = await Promise.all([
+		getSharedWithMe(),
+		prisma.share.findMany({
+			where: {
+				ownerId: currentUser.id,
+				...activeShareWhere(now),
+			},
+			include: {
+				recipient: { select: { id: true, name: true, email: true } },
+			},
+			orderBy: { createdAt: 'desc' },
+		}),
+	]);
+
+	return {
+		sharedWithMe,
+		sharedByMe: sharedByMe.filter(isUnreadShare),
+	};
 }
 
 export async function getTags() {
