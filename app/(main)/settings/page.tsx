@@ -1,4 +1,6 @@
+import { AccountSettings } from "@/components/blocks/accountsettings";
 import { NewUserDialog } from "@/components/blocks/newuserdialog";
+import { EditUserDialog } from "@/components/blocks/edituserdialog";
 import { AppsManager } from "@/components/blocks/appsmanager";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCurrentUser, getServerSettings, getServerUsers, saveFileSettings, saveServerSettings } from "@/lib/actions";
-import { Pen } from "lucide-react";
 
 export default async function Settings() {
 	const currentUser = await getCurrentUser();
@@ -33,144 +34,155 @@ export default async function Settings() {
 
 			<div className="flex flex-col gap-2">
 				<h1 className="text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">Settings</h1>
-				{!isRegularUser ? (
-					<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-						Control server identity, invite users, and define which folders each account can access.
-					</p>
-				) : null}
+				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+					Manage your account{!isRegularUser ? ', server identity, users, and connected apps' : ''}.
+				</p>
 			</div>
-
-			{isRegularUser ? null : (
 
 			<div className="space-y-10">
 				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 					<div>
-						<h2 className="text-base font-semibold tracking-tight md:text-lg">Server settings</h2>
+						<h2 className="text-base font-semibold tracking-tight md:text-lg">User settings</h2>
 						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-							General server settings. (Only visible for owner)
+							Update your name, email, or password.
 						</p>
 					</div>
 
 					<Card className="col-span-2 p-6">
-						<form className="grid gap-5" action={saveServerSettings}>
-							<div className="grid gap-2">
-								<Label htmlFor="server-name">Server Name</Label>
-								<Input
-									id="server-name"
-									name="server-name"
-									placeholder="Big NAS"
-									defaultValue={settings.serverName}
-								/>
-							</div>
-
-							<div className="flex">
-								<Button className="ml-auto">Save settings</Button>
-							</div>
-						</form>
+						<AccountSettings user={{ name: currentUser.name, email: currentUser.email }} />
 					</Card>
 				</div>
 
+				{!isRegularUser ? (
+					<>
+						<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+							<div>
+								<h2 className="text-base font-semibold tracking-tight md:text-lg">Server settings</h2>
+								<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+									General server settings. (Only visible for owner)
+								</p>
+							</div>
 
-				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-					<div>
-						<h2 className="text-base font-semibold tracking-tight md:text-lg">Users</h2>
-						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-							Manage users. (Only visible for admins)
-						</p>
-					</div>
+							<Card className="col-span-2 p-6">
+								<form className="grid gap-5" action={saveServerSettings}>
+									<div className="grid gap-2">
+										<Label htmlFor="server-name">Server Name</Label>
+										<Input
+											id="server-name"
+											name="server-name"
+											placeholder="Big NAS"
+											defaultValue={settings.serverName}
+										/>
+									</div>
 
-					<Card className="col-span-2 overflow-hidden">
-						<div className="flex items-center justify-between gap-4 border-b border-zinc-200/80 p-5">
-							<h2 className="text-base font-semibold md:text-lg">Users</h2>
-							<NewUserDialog>
-								<Button>Add user</Button>
-							</NewUserDialog>
+									<div className="flex">
+										<Button className="ml-auto">Save settings</Button>
+									</div>
+								</form>
+							</Card>
 						</div>
 
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Name</TableHead>
-									<TableHead>Email</TableHead>
-									<TableHead>Role</TableHead>
-									<TableHead>Base Directory</TableHead>
-								</TableRow>
-							</TableHeader>
-
-							<TableBody>
-								{users.map((user) => {
-									return (
-										<TableRow key={user.id}>
-											<TableCell style={{ height: 49 }}>
-												<div className="flex items-center gap-2">
-													<Pen className="h-4 w-4 text-muted-foreground cursor-pointer" />
-
-													{user.name}
-												</div>
-											</TableCell>
-
-											<TableCell>{user.email}</TableCell>
-											<TableCell>
-												{user.role == 'O' ? 'Owner' : null}
-												{user.role == 'A' ? 'Admin' : null}
-												{user.role == 'U' ? 'User' : null}
-											</TableCell>
-											<TableCell>{user.rootDir}</TableCell>
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
-
-					</Card>
-				</div>
-
-				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-					<div>
-						<h2 className="text-base font-semibold tracking-tight md:text-lg">Files</h2>
-						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-							Control how files are displayed across Lokal. (Only visible for owner)
-						</p>
-					</div>
-
-					<Card className="col-span-2 p-6">
-						<form className="grid gap-5" action={saveFileSettings}>
-							<label className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white/60 p-4">
-								<input
-									type="checkbox"
-									name="ignore-ds-store"
-									defaultChecked={settings.ignoreDsStore}
-									className="mt-1 h-4 w-4 rounded border-zinc-300 accent-zinc-950"
-								/>
-								<span>
-									<span className="block text-sm font-medium text-zinc-950">Hide .DS_Store files</span>
-									<span className="mt-1 block text-sm leading-6 text-muted-foreground">
-										When enabled, .DS_Store files are never shown in directory listings.
-									</span>
-								</span>
-							</label>
-
-							<div className="flex">
-								<Button className="ml-auto">Save file settings</Button>
+						<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+							<div>
+								<h2 className="text-base font-semibold tracking-tight md:text-lg">Users</h2>
+								<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+									Manage users. (Only visible for admins)
+								</p>
 							</div>
-						</form>
-					</Card>
-				</div>
 
-				<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-					<div>
-						<h2 className="text-base font-semibold tracking-tight md:text-lg">Apps</h2>
-						<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-							Register external apps and create user-bound API tokens for app-private datasets.
-						</p>
-					</div>
+							<Card className="col-span-2 overflow-hidden">
+								<div className="flex items-center justify-between gap-4 border-b border-zinc-200/80 p-5">
+									<h2 className="text-base font-semibold md:text-lg">Users</h2>
+									<NewUserDialog>
+										<Button>Add user</Button>
+									</NewUserDialog>
+								</div>
 
-					<Card className="col-span-2 p-6">
-						<AppsManager />
-					</Card>
-				</div>
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Name</TableHead>
+											<TableHead>Email</TableHead>
+											<TableHead>Role</TableHead>
+											<TableHead>Base Directory</TableHead>
+										</TableRow>
+									</TableHeader>
+
+									<TableBody>
+										{users.map((user) => {
+											return (
+												<TableRow key={user.id}>
+													<TableCell style={{ height: 49 }}>
+														<div className="flex items-center gap-2">
+															<EditUserDialog user={{ id: user.id, name: user.name, email: user.email, role: user.role, rootDir: user.rootDir }} />
+
+															{user.name}
+														</div>
+													</TableCell>
+
+													<TableCell>{user.email}</TableCell>
+													<TableCell>
+														{user.role == 'O' ? 'Owner' : null}
+														{user.role == 'A' ? 'Admin' : null}
+														{user.role == 'U' ? 'User' : null}
+													</TableCell>
+													<TableCell>{user.rootDir}</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+
+							</Card>
+						</div>
+
+						<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+							<div>
+								<h2 className="text-base font-semibold tracking-tight md:text-lg">Files</h2>
+								<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+									Control how files are displayed across Lokal. (Only visible for owner)
+								</p>
+							</div>
+
+							<Card className="col-span-2 p-6">
+								<form className="grid gap-5" action={saveFileSettings}>
+									<label className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white/60 p-4">
+										<input
+											type="checkbox"
+											name="ignore-ds-store"
+											defaultChecked={settings.ignoreDsStore}
+											className="mt-1 h-4 w-4 rounded border-zinc-300 accent-zinc-950"
+										/>
+										<span>
+											<span className="block text-sm font-medium text-zinc-950">Hide .DS_Store files</span>
+											<span className="mt-1 block text-sm leading-6 text-muted-foreground">
+												When enabled, .DS_Store files are never shown in directory listings.
+											</span>
+										</span>
+									</label>
+
+									<div className="flex">
+										<Button className="ml-auto">Save file settings</Button>
+									</div>
+								</form>
+							</Card>
+						</div>
+
+						<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+							<div>
+								<h2 className="text-base font-semibold tracking-tight md:text-lg">Apps</h2>
+								<p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+									Register external apps and create user-bound API tokens for app-private datasets.
+								</p>
+							</div>
+
+							<Card className="col-span-2 p-6">
+								<AppsManager />
+							</Card>
+						</div>
+					</>
+				) : null}
 			</div>
-			)}
 		</>
 	);
 }
