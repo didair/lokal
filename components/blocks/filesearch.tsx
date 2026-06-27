@@ -51,6 +51,8 @@ export function FileSearch() {
   const router = useRouter();
   const containerRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const manuallyClosedRef = useRef(false);
+  const closedQueryRef = useRef('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -64,7 +66,15 @@ export function FileSearch() {
   const showHelp = trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const activeResult = useMemo(() => results[activeIndex] ?? results[0] ?? null, [activeIndex, results]);
 
+  const closeResults = () => {
+    manuallyClosedRef.current = true;
+    closedQueryRef.current = query;
+    setOpen(false);
+  };
+
   const focusSearch = () => {
+    manuallyClosedRef.current = false;
+    closedQueryRef.current = '';
     inputRef.current?.focus();
     window.requestAnimationFrame(() => inputRef.current?.select());
     setOpen(true);
@@ -73,11 +83,19 @@ export function FileSearch() {
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) {
+        manuallyClosedRef.current = true;
         setOpen(false);
       }
     };
 
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape' && containerRef.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeResults();
+        return;
+      }
+
       const shortcutPressed = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
       const slashPressed = event.key === '/' && !isEditableTarget(event.target);
 
@@ -90,12 +108,12 @@ export function FileSearch() {
     };
 
     document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, []);
+  }, [query]);
 
   useEffect(() => {
     if (trimmedQuery.length < 2) {
@@ -127,7 +145,9 @@ export function FileSearch() {
           setResults(body.results ?? []);
           setActiveIndex(0);
           setTruncated(Boolean(body.truncated));
-          setOpen(true);
+          if (!manuallyClosedRef.current) {
+            setOpen(true);
+          }
         })
         .catch((searchError) => {
           if (searchError instanceof DOMException && searchError.name === 'AbortError') {
@@ -136,7 +156,9 @@ export function FileSearch() {
 
           setResults([]);
           setError(searchError instanceof Error ? searchError.message : 'Could not search files');
-          setOpen(true);
+          if (!manuallyClosedRef.current) {
+            setOpen(true);
+          }
         })
         .finally(() => setLoading(false));
     }, 250);
@@ -176,6 +198,8 @@ export function FileSearch() {
     setResults([]);
     setError('');
     setTruncated(false);
+    manuallyClosedRef.current = true;
+    closedQueryRef.current = '';
     setOpen(false);
     inputRef.current?.focus();
   };
@@ -196,24 +220,56 @@ export function FileSearch() {
     }
 
     if (event.key === 'Escape') {
-      setOpen(false);
-      inputRef.current?.blur();
+      event.preventDefault();
+      event.stopPropagation();
+      event.nativeEvent.stopImmediatePropagation?.();
+      closeResults();
     }
   };
 
   return (
     <>
-      <form onSubmit={submitSearch} ref={containerRef} className="relative max-w-xl">
+      <form
+        onSubmit={submitSearch}
+        onBlurCapture={() => {
+          window.setTimeout(() => {
+            if (!containerRef.current?.contains(document.activeElement)) {
+              closeResults();
+            }
+          }, 0);
+        }}
+        onKeyDownCapture={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            closeResults();
+          }
+        }}
+        ref={containerRef}
+        className="relative max-w-xl"
+      >
         <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           ref={inputRef}
           type="search"
           value={query}
           onChange={(event) => {
-            setQuery(event.target.value);
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
+
+            if (manuallyClosedRef.current && nextQuery === closedQueryRef.current) {
+              return;
+            }
+
+            manuallyClosedRef.current = false;
+            closedQueryRef.current = '';
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            manuallyClosedRef.current = false;
+            closedQueryRef.current = '';
+            setOpen(query.trim().length > 0);
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Search files..."
           className="w-full appearance-none bg-white/75 pl-8 pr-10 shadow-sm [&::-webkit-search-cancel-button]:appearance-none"
@@ -255,7 +311,10 @@ export function FileSearch() {
                     key={result.path}
                     type="button"
                     onMouseEnter={() => setActiveIndex(index)}
-                    onClick={() => selectResult(result)}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      selectResult(result);
+                    }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                       index === activeIndex ? "bg-rose-50 text-zinc-950" : "hover:bg-zinc-50",
