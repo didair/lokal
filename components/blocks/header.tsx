@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetTrigger, SheetContent, SheetClose } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
-import { BellIcon, CircleUserIcon, SearchIcon, FileIcon, MenuIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
+import { BellIcon, CircleUserIcon, FileIcon, MenuIcon, HomeIcon, UsersIcon, Package2Icon, PinIcon, TagIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { getCurrentUser, getServerName, getTags } from "@/lib/actions";
 import FileUpload from "./fileupload";
+import { FileSearch } from "./filesearch";
 
 export const Header = async () => {
 	const server_name = await getServerName();
@@ -95,16 +95,7 @@ export const Header = async () => {
 			</Sheet>
 
 			<div className="w-full flex-1">
-				<form>
-					<div className="relative max-w-xl">
-						<SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-						<Input
-							type="search"
-							placeholder="Search files..."
-							className="w-full appearance-none bg-white/75 pl-8 shadow-sm"
-						/>
-					</div>
-				</form>
+				<FileSearch />
 			</div>
 
 			<div className="ml-auto flex items-center gap-2">
